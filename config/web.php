@@ -47,7 +47,11 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
-                '' => 'site/index',
+
+                'download/<filename>' => 'site/download',
+                // 'dir/<filename>' => 'site/change-dir',
+                'fileman' => 'site/fileman',
+                // '""' => 'site/index',
                 '<action>' => 'site/<action>',
             ],
         ],

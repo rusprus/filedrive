@@ -10,18 +10,22 @@ class UploadForm extends Model
      * @var UploadedFile
      */
     public $imageFile;
+    public $parent;
 
     public function rules()
     {
         return [
             [['imageFile'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg, txt'],
+            [['parent'], 'safe'],
+            // [['imageFile'], 'skipOnEmpty' => false, 'extensions' => 'png, jpg, txt'],
         ];
     }
     
     public function upload()
     {
         if ($this->validate()) {
-            $this->imageFile->saveAs('uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
+
+            $this->imageFile->saveAs('../uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
             return true;
         } else {
             return false;
