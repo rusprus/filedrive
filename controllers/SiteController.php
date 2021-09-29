@@ -71,6 +71,7 @@ class SiteController extends Controller
         return $this->render('about');
     }
 
+   
     /**
      * Displays homepage.
      *
@@ -78,92 +79,77 @@ class SiteController extends Controller
      */
     public function actionFileman()
     {
-        $session = Yii::$app->session;
-
-        $model = new UploadForm();
+        $uploadForm = new UploadForm();
         $newDir = new File();   
 
-        // Загрузка файла
-        if (Yii::$app->request->isPost) { 
-            $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
-            $model->parent = Yii::$app->request->post('UploadForm')['parent'];
-            
-            if ($model->upload()) {
-                $newFile = new File();
-                $newFile->name = $model->imageFile->baseName . '.' . $model->imageFile->extension;
-                $newFile->path = '..uploads/' . $newFile->name;
-                $newFile->type = 'file';
-                $newFile->size = 1000;
-                $newFile->parent = $model->parent;
-                $newFile->save();
-                return $this->redirect(Yii::$app->request->referrer);
-            }
-        }
-        // *******************************************************************************
-        // Обработка Get-запросов
+        // Обработка Get-запроса
         if( Yii::$app->request->isGet ) {
-            $parent = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
-            $type = Yii::$app->request->get('type') ? Yii::$app->request->get('type'): null;
-
-            // Клик по папке - переход
-            if( $parent && ($type == 'dir')){
-
-                $breadcrumbs = $session->get('breadcrumbs');
-                // $breadcrumbs[] = ['label' => 'Хранилище', 'url' => ['/fileman']];
-                $breadcrumbs[] = ['label' => $parent, 'url' => ['/fileman?id='. $parent]];
-                $this->view->params['breadcrumbs'] = $breadcrumbs;
-                $session->set('breadcrumbs', $breadcrumbs);
-
-
-                $files = File::find()->where(['parent'=>$parent])->All();
-                return $this->render('index', ['files'=> $files, 
-                                                'model'=>$model, 
-                                                'newDir'=>$newDir,  
-                                                'parent'=> $parent,
-                                                // 'breadcrumbs'=>$breadcrumbs,
-                                             ]);
+            // Ищем в базе папку или файл
+            $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
+            $curFile = File::find()->where(['id' => $curId ])->one();
+            
+            // Если файл, то скачать 
+            if( $curFile->type == 'file' ){
+                $this->downloadFile( $curFile->name );
             }
-            // Клик по файлу - скачиваем 
-            if( $type == 'file' ){
+        }else{
+            // Папка по умолчанию, если в базе нет
+            $curFile = File::find()->where(['id' => 1])->one();
+            }
+        // Список содержимого папки
+        $files = File::find()->where(['parent' => $curFile->id])->All();
+        
+        $this->setBreadcrumbs( $curFile );
 
-                $breadcrumbs[] = ['label' => 'Хранилище', 'url' => ['/fileman']];
-                $breadcrumbs[] = ['label' => $parent, 'url' => ['/fileman']];
+        return $this->render('index', ['files'=> $files, 
+                                        'uploadForm'=>$uploadForm, 
+                                        'newDir'=>$newDir, 
+                                        'curFile'=>$curFile,
+                                        ]
+                            );
+    }
+    /**
+     *  Установка хлебных крошек
+     *
+     * @return
+     */
+    public function setBreadcrumbs( $curFile ){
 
-                $filename = \Yii::$app->request->get('filename');
-                $this->downloadFile( $filename );
-            //    return "Work";
-                return $this->render('index', ['files'=> $files, 'model'=>$model, 'newDir'=>$newDir,  'parent'=> $parent, 'breadcrumbs'=>$breadcrumbs ]);
+        $session = Yii::$app->session;
+        $breadcrumbs = $session->get('breadcrumbs');
+
+        // Убираем лишние ссылки при возврате на папку выше
+        foreach($breadcrumbs as $key => $breadcrumb){
+            if ($breadcrumb['id'] == $curFile->id){
+                $breadcrumbs =  array_slice($breadcrumbs,0, $key);
+                break;
             }
         }
-        
-        $breadcrumbs[] = ['label' => 'Хранилище', 'url' => ['/fileman']];
-        // $breadcrumbs[] = ['label' => $parent, 'url' => ['/fileman']];
-        // Если без запросов
-        $files = File::find()->where(['parent'=>1])->All();
-        return $this->render('index', ['files'=> $files, 'model'=>$model, 'newDir'=>$newDir, 'parent'=> 1, 'breadcrumbs'=>$breadcrumbs]);
+        // Добавляем папку в которую вошли
+        $breadcrumbs[] = ['id' => $curFile->id, 'label' => $curFile->name, 'url' => ['/fileman?id='. $curFile->id . '&type='.$curFile->type]];
+
+        $this->view->params['breadcrumbs'] = $breadcrumbs;
+        $session->set('breadcrumbs', $breadcrumbs);
+
     }
 
-
-   
-
-
      /**
-     * downloadFile function. Скачиване файла
+     *  Скачивание файла
      *
      * @return
      */
     public function downloadFile($filename)
     {
-        
-        if( file_exists(  Yii::getAlias('@app').'../uploads/'. $filename ) ){
-            $path = Yii::getAlias('@app').'../uploads/'. $filename ;
+        if( file_exists(  Yii::getAlias('@app').'/uploads/'. $filename ) ){
+            $path = Yii::getAlias('@app').'/uploads/'. $filename ;
+
             return \Yii::$app->response->sendFile($path);
         }
         return $this->goBack();
     }
 
     /**
-     * AddDir action. Добавление папки
+     * Добавление папки
      *
      * @return
      */
@@ -188,6 +174,31 @@ class SiteController extends Controller
         return true; 
     }
 
+    /**
+     * Загрузка файла
+     * 
+     */
+    public function actionUploadFile(){
+        
+        $uploadForm = new UploadForm();
+
+        if (Yii::$app->request->isPost) { 
+
+            $uploadForm->imageFile = UploadedFile::getInstance($uploadForm, 'imageFile');
+            $uploadForm->parent = Yii::$app->request->post('UploadForm')['parent'];
+            
+            if ($uploadForm->upload()) {
+                $newFile = new File();
+                $newFile->name = $uploadForm->imageFile->baseName . '.' . $uploadForm->imageFile->extension;
+                $newFile->path = '../uploads/' . $newFile->name;
+                $newFile->type = 'file';
+                $newFile->size = 1000;
+                $newFile->parent = $uploadForm->parent;
+                $newFile->save();
+                return $this->redirect(Yii::$app->request->referrer);
+            }
+        }
+    }
 
     /**
      * Login action.

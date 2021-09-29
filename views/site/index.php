@@ -10,7 +10,7 @@ $this->title = 'My Yii Application';
 
 <?php 
 
-  //  $this->params['breadcrumbs'] = $breadcrumbs;
+  //  $this->params['breadcrumbs'] = [];
 
 
     // array_pop($this->params['breadcrumbs']);
@@ -67,11 +67,11 @@ $this->title = 'My Yii Application';
                     
                 <?php if($file->type == 'dir'):?>
                       <img src="./img/folder.png" alt="folder" class="h-100 w-25">
-                      <a href="./fileman?type=<?php echo $file->type ?>&id=<?php echo $file->id ?>" class="d-inline-block "><?php echo $file->name ?></a>
+                      <a href="./fileman?id=<?php echo $file->id ?>" class="d-inline-block "><?php echo $file->name ?></a>
                 <?php endif; ?>
                 <?php if($file->type == 'file'):?>
                       <img src="./img/document.png" alt="folder" class="h-100 w-25">
-                      <a href="./fileman?type=<?php echo $file->type ?>&filename=<?php echo $file->name ?>" class="d-inline-block "><?php echo $file->name ?></a>
+                      <a href="./fileman?id=<?php echo $file->id ?>" class="d-inline-block "><?php echo $file->name ?></a>
                 <?php endif; ?>
                     </div>
 <?php endforeach; ?>
@@ -91,11 +91,11 @@ $this->title = 'My Yii Application';
       </div>
       <div class="modal-body">
         <?php $form = ActiveForm::begin(['id' => 'upload-form',
-        'action'=> 'fileman',
+        'action'=> 'upload-file',
         'options' => ['enctype' => 'multipart/form-data']]) ?>
 
-        <?php echo $form->field($model, 'imageFile')->fileInput() ?>
-        <?php echo $form->field($model, 'parent')->hiddenInput(['value' => $parent])->label('') ;?>
+        <?php echo $form->field($uploadForm, 'imageFile')->fileInput() ?>
+        <?php echo $form->field($uploadForm, 'parent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
 
 
         <!-- <button>Submit</button> -->
@@ -130,7 +130,7 @@ $this->title = 'My Yii Application';
 
         <?php echo $form->field($newDir, 'name')->textInput(['placeholder' => "Название папки"])->label('') ;?>
        
-        <?php echo $form->field($newDir, 'parent')->hiddenInput(['value' => $parent])->label('') ;?>
+        <?php echo $form->field($newDir, 'parent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
 
         <!-- <button>Submit</button> -->
         <div class="modal-footer">
