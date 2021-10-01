@@ -48,9 +48,9 @@ $config = [
             'showScriptName' => false,
             'rules' => [
 
-                'download/<filename>' => 'site/download',
+                'download/<filename>' => 'fileman/download',
                 // 'dir/<filename>' => 'site/change-dir',
-                'fileman' => 'site/fileman',
+                'fileman' => 'fileman/fileman',
                 // '""' => 'site/index',
                 '<action>' => 'site/<action>',
             ],

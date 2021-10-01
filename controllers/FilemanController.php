@@ -15,7 +15,7 @@ use app\models\UploadForm;
 use yii\web\UploadedFile;
 use yii\web\UrlManager;
 
-class SiteController extends Controller
+class FilemanController extends Controller
 {
     /**
      * {@inheritdoc}
@@ -61,7 +61,7 @@ class SiteController extends Controller
     }
 
     /**
-     * Displays homepage.
+     * Рендер файлового менеджера.
      *
      * @return string
      */
@@ -71,9 +71,8 @@ class SiteController extends Controller
         return $this->render('index');
     }
 
-   
     /**
-     * Displays homepage.
+     * Действие  файлового менеджера
      *
      * @return string
      */
@@ -99,7 +98,9 @@ class SiteController extends Controller
         // Список содержимого папки
         $files = File::find()->where(['parent' => $curFile->id])->All();
 
-        $this->setBreadcrumbs( $curFile );
+        if( $curFile->type == 'dir'){
+            $this->setBreadcrumbs( $curFile );  
+        }
 
         return $this->render('index', ['files'=> $files, 
                                         'uploadForm'=>$uploadForm, 
@@ -114,11 +115,10 @@ class SiteController extends Controller
      * @return
      */
     public function setBreadcrumbs( $curFile ){
-        $breadcrumbs = [];
-        $session->set('breadcrumbs', $breadcrumbs);
+ 
         $session = Yii::$app->session;
         $breadcrumbs = $session->get('breadcrumbs');
-
+        $breadcrumbs = $breadcrumbs ? $breadcrumbs : [];
         // Убираем лишние ссылки при возврате на папку выше
         foreach($breadcrumbs as $key => $breadcrumb){
             if ($breadcrumb['id'] == $curFile->id){
@@ -130,7 +130,6 @@ class SiteController extends Controller
         $breadcrumbs[] = ['id' => $curFile->id, 'label' => $curFile->name, 'url' => ['/fileman?id='. $curFile->id . '&type='.$curFile->type]];
 
         $this->view->params['breadcrumbs'] = $breadcrumbs;
-        // $breadcrumbs = [];
         $session->set('breadcrumbs', $breadcrumbs);
 
     }
@@ -202,65 +201,5 @@ class SiteController extends Controller
         }
     }
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
-
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Logout action.
-     *
-     * @return Response
-     */
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
-    }
-
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
+    
 }
