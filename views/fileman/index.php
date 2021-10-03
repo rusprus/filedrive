@@ -4,6 +4,7 @@
 
 use yii\widgets\ActiveForm;
 use yii\widgets\Breadcrumbs;
+use yii\helpers\Url;
 
 $this->title = 'My Yii Application';
 ?>
@@ -42,14 +43,14 @@ $this->title = 'My Yii Application';
                 <div class=" row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4">
 
 <?php foreach($files as $file):  ?>
-                    <div class="dir col border border-primary px-4 py-4" style="width:250px; height: 100px;">
+                    <div class="dir  col border border-primary px-4 py-4"  style="width:250px; height: 100px;">
                       <?php if($file->type == 'dir'):?>
-                            <img src="./img/folder.png" alt="folder" class="h-100 w-25">
-                            <a href="./fileman?id=<?php echo $file->id ?>&type=<?php echo $file->type ?>" class="d-inline-block "><?php echo $file->name ?></a>
+                            <img src="<?php echo Url::to('@web/img/folder.png'); ?>" alt="folder" class="h-100 w-25">
+                            <a href="<?php echo Url::to(['fileman/fileman', 'id' => $file->id, 'type'=>$file->type]);?>" data-contextmenu class="d-inline-block "><?php echo $file->name ?></a>
                       <?php endif; ?>
                       <?php if($file->type == 'file'):?>
-                            <img src="./img/document.png" alt="folder" class="h-100 w-25">
-                            <a href="./fileman?id=<?php echo $file->id ?>" class="d-inline-block "><?php echo $file->name ?></a>
+                            <img src="<?php echo Url::to('@web/img/document.png'); ?>" alt="folder" class="h-100 w-25">
+                            <a href="<?php echo Url::to(['fileman/fileman', 'id' => $file->id]);?>" data-contextmenu class="d-inline-block " ><?php echo $file->name ?></a>
                       <?php endif; ?>
                     </div>
 <?php endforeach; ?>

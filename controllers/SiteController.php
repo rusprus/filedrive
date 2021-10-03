@@ -81,11 +81,21 @@ class SiteController extends Controller
     {
         $uploadForm = new UploadForm();
         $newDir = new File();   
+        var_dump('ddddddd');die;
 
         // Обработка Get-запроса
         if( Yii::$app->request->isGet ) {
-            // Ищем в базе папку или файл
+
+            $newname = Yii::$app->request->get('newname') ? Yii::$app->request->get('newname') : null;
             $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
+
+            if( $newname && $curId ){
+                 $curFile = File::find()->where(['id' => $curId ])->one();
+                 $curFile->name = $newname;
+                 $curFile->save();
+            }
+
+            // Ищем в базе папку или файл
             $curFile = File::find()->where(['id' => $curId ])->one();
             
             // Если файл, то скачать 
@@ -114,8 +124,7 @@ class SiteController extends Controller
      * @return
      */
     public function setBreadcrumbs( $curFile ){
-        $breadcrumbs = [];
-        $session->set('breadcrumbs', $breadcrumbs);
+
         $session = Yii::$app->session;
         $breadcrumbs = $session->get('breadcrumbs');
 

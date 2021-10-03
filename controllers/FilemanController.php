@@ -83,6 +83,14 @@ class FilemanController extends Controller
 
         // Обработка Get-запроса
         if( Yii::$app->request->isGet ) {
+
+            $newname = Yii::$app->request->get('newname') ? Yii::$app->request->get('newname') : null;
+            $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
+
+            if( $newname && $curId ){
+                renameFile( $curId, $newname);
+           }
+
             // Ищем в базе папку или файл
             $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
             $curFile = File::find()->where(['id' => $curId ])->one();
@@ -92,7 +100,7 @@ class FilemanController extends Controller
                 $this->downloadFile( $curFile->name );
             }
         }else{
-            // Папка по умолчанию, если в базе нет
+            // Папка по умолчанию, если файла нет в базе
             $curFile = File::find()->where(['id' => 1])->one();
             }
         // Список содержимого папки
@@ -109,6 +117,67 @@ class FilemanController extends Controller
                                         ]
                             );
     }
+
+   /**
+     *  Асинхронная обработка переименования файла/папки
+     *
+     * @return
+     */
+    public function actionRename(){
+
+        $newname = Yii::$app->request->get('newname') ? Yii::$app->request->get('newname') : null;
+        $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
+
+        if( $newname &&  $curId  ){
+            $this->renameFile( $curId, $newname);
+            return true;
+        } 
+        return false;
+    }
+
+    /**
+     *  Удаление файла/папки
+     *
+     * @return
+     */
+    public function actionDel(){
+        $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
+        // var_dump(Yii::getAlias('@app') );die;
+
+        if( $curId  ){
+            $curFile = File::findOne($curId);
+
+            if( $curFile->type == 'dir' ) rmdir(__DIR__ . '/../uploads/'. $curFile->name);
+            if( $curFile->type == 'file' ) unlink(__DIR__ . '/../uploads/'. $curFile->name);
+
+          echo __DIR__ . '/../uploads/'. $curFile->name; 
+        //   var_dump(Yii::getAlias('@app') . '/upload/' . $curFile->name);die;
+
+            $curFile->delete();
+
+            return true;
+
+        } 
+        return false;
+    }
+
+    
+    /**
+     *  Функция переименования   файла/папки
+     *
+     * @return
+     */
+    public function renameFile( $curId, $newname){
+        
+          $curFile = File::find()->where(['id' => $curId ])->one();
+
+          rename(Yii::getAlias('@app').'/uploads/'. $curFile->name,  Yii::getAlias('@app').'/uploads/'. $newname);
+
+          $curFile->name = $newname;
+          $curFile->save();
+
+    }
+
     /**
      *  Установка хлебных крошек
      *
@@ -200,6 +269,8 @@ class FilemanController extends Controller
             }
         }
     }
+
+    
 
     
 }
