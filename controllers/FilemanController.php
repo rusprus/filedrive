@@ -97,7 +97,7 @@ class FilemanController extends Controller
             
             // Если файл, то скачать 
             if( $curFile->type == 'file' ){
-                $this->downloadFile( $curFile->name );
+                $this->downloadFile( $curFile->path . '/' .  $curFile->name);
             }
         }else{
             // Папка по умолчанию, если файла нет в базе
@@ -135,6 +135,7 @@ class FilemanController extends Controller
         return false;
     }
 
+    // SELECT `id`,`path` FROM `files` WHERE `path` LIKE '/Хранилище/Китай%'
     /**
      *  Удаление файла/папки
      *
@@ -142,16 +143,29 @@ class FilemanController extends Controller
      */
     public function actionDel(){
         $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
-        // var_dump(Yii::getAlias('@app') );die;
 
         if( $curId  ){
-            $curFile = File::findOne($curId);
+   
+            $curFile = File::find()
+                            ->where(['id' => $curId])
+                            ->one();
 
-            if( $curFile->type == 'dir' ) rmdir(__DIR__ . '/../uploads/'. $curFile->name);
-            if( $curFile->type == 'file' ) unlink(__DIR__ . '/../uploads/'. $curFile->name);
+            $curFullPath = $curFile->path . '/' . $curFile->name;
 
-          echo __DIR__ . '/../uploads/'. $curFile->name; 
-        //   var_dump(Yii::getAlias('@app') . '/upload/' . $curFile->name);die;
+            $childFiles = File::find()
+                                ->where(['like', 'path', $curFullPath]) 
+                                // ->where(['path'=> '/Хранилище/Китай']) 
+                                ->all();
+            // var_dump(  $childFiles );die;
+
+            foreach( $childFiles as $item ){
+                $item->delete();
+
+            }
+
+
+            if( $curFile->type == 'dir' ) $this->deleteDir(__DIR__ . '/../uploads/'. $curFullPath);
+            if( $curFile->type == 'file' ) unlink(__DIR__ . '/../uploads/'. $curFile->path);
 
             $curFile->delete();
 
@@ -171,10 +185,50 @@ class FilemanController extends Controller
         
           $curFile = File::find()->where(['id' => $curId ])->one();
 
-          rename(Yii::getAlias('@app').'/uploads/'. $curFile->name,  Yii::getAlias('@app').'/uploads/'. $newname);
+          rename(Yii::getAlias('@app').'/uploads'. $curFile->path . '/' . $curFile->name,  Yii::getAlias('@app').'/uploads' . $curFile->path . '/' . $newname);
 
+
+          $oldPath = $curFile->path . '/' . $curFile->name;
           $curFile->name = $newname;
+          $newPath = $curFile->path . '/' . $curFile->name;
+
+
+        //   var_dump( '$oldPath: ' . $oldPath . '; ' . ' $newPath: ' . $newPath );
+        //   die;
+
+        //   $files = (new \yii\db\Query());
+          $files = new File();
+        //   $result = $files->select('files.id, files.path')
+         $result = $files->find()
+                         ->from('files')
+                          ->where(['like', 'path', $oldPath]) 
+                          // ->where(['path'=> '/Хранилище/Китай']) 
+                          ->all();
+        //   var_dump($result);
+
+          foreach(  $result as $item ){
+              $item->path =  preg_replace( "#".$oldPath."#", $newPath, $item->path);
+              $item->save();
+          }
+          // $files = new File();
+          // $result = $files->find('id, path')
+          //                 // ->from('files')
+          //                 ->where(['like', 'path', '/Хранилище/Китай']) 
+          //                 ->asArray()
+          //                 // ->where(['path'=> '/Хранилище/Китай']) 
+          //                 ->all();
+
+
+        //   $pattern = '#a#';
+        //   $replasment = 'b';
+        //   $str = 'adddddd';
+        //   $str = preg_replace( $pattern, $replasment, $str);
+        //   echo  $str;
+
+        // var_dump($result);
+        //   die;
           $curFile->save();
+
 
     }
 
@@ -226,22 +280,31 @@ class FilemanController extends Controller
     public function actionAddDir()
     {
 
-        $input_name = Yii::$app->request->post('File')['name'];
-        $input_name = strip_tags($input_name);
-        $input_name = htmlspecialchars($input_name);
-        // $input_name = mysql_escape_string($input_name);
+        $name = Yii::$app->request->post('File')['name'];
+        $idParent = (int)Yii::$app->request->post('File')['idParent'];
+        $dir = File::find()->where(['id'=>$idParent])->one();
+        $nameParent = $dir->name ;
+        $pathParent = $dir->path ;
+        // $nameParent = Yii::$app->request->post('File')['nameParent'];
+        // $pathParent = Yii::$app->request->post('File')['pathParent'];
 
-        $input_parent = (int)Yii::$app->request->post('File')['parent'];
+        $newDir = new File();
+        $newDir->name = $name;
+        $newDir->path = $pathParent . '/' . $nameParent ;
+        $newDir->type = 'dir';
+        $newDir->size = 1000;
+        $newDir->parent = $idParent;
+        // var_dump ( "name: ". $name.";  idParent: ". $idParent."; nameParent: ". $nameParent."; pathParent: ". $pathParent );
+        // die;        
+        // var_dump (  $newDir->path . '/'. $newDir->name);
+        // var_dump ( $newDir );
+        // die;
+        $newDir->save();
+        // var_dump('../uploads' . $newDir->path . '/'. $newDir->name);
+        mkdir( '../uploads' . $newDir->path . '/'. $newDir->name);
+        // var_dump($newDir->path);die;
 
-        $newFile = new File();
-        $newFile->name = $input_name;
-        $newFile->path = '../uploads/' . $input_name;
-        $newFile->type = 'dir';
-        $newFile->size = 1000;
-        $newFile->parent = $input_parent;
-        $newFile->save();
-        mkdir($newFile->path);
-        return true; 
+        // return true; 
     }
 
     /**
@@ -255,22 +318,49 @@ class FilemanController extends Controller
         if (Yii::$app->request->isPost) { 
 
             $uploadForm->imageFile = UploadedFile::getInstance($uploadForm, 'imageFile');
-            $uploadForm->parent = Yii::$app->request->post('UploadForm')['parent'];
+            $uploadForm->idParent = Yii::$app->request->post('UploadForm')['idParent'];
+            // $uploadForm->nameParent = Yii::$app->request->post('UploadForm')['nameParent'];
+
+            $parenDir = File::find()->where(['id' => $uploadForm->idParent ])->one();
+
+            $uploadForm->nameParent = $parenDir->name;
+            $uploadForm->pathParent = $parenDir->path;
             
             if ($uploadForm->upload()) {
                 $newFile = new File();
                 $newFile->name = $uploadForm->imageFile->baseName . '.' . $uploadForm->imageFile->extension;
-                $newFile->path = '../uploads/' . $newFile->name;
+                // $newFile->path = '../uploads/' . $newFile->name;
+                $newFile->path =   $parenDir->path . '/' . $parenDir->name ;
+                // var_dump($newFile->path);die;
                 $newFile->type = 'file';
                 $newFile->size = 1000;
-                $newFile->parent = $uploadForm->parent;
+                $newFile->parent = $parenDir->id;
+                // var_dump($newFile);
                 $newFile->save();
+            // var_dump('ddddddddddddddd');die;
+
                 return $this->redirect(Yii::$app->request->referrer);
             }
         }
     }
 
     
-
+    public static function deleteDir($dirPath) {
+        if (! is_dir($dirPath)) {
+            throw new InvalidArgumentException("$dirPath must be a directory");
+        }
+        if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
+            $dirPath .= '/';
+        }
+        $files = glob($dirPath . '*', GLOB_MARK);
+        foreach ($files as $file) {
+            if (is_dir($file)) {
+                self::deleteDir($file);
+            } else {
+                unlink($file);
+            }
+        }
+        rmdir($dirPath);
+    }
     
 }

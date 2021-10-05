@@ -70,11 +70,11 @@ $this->title = 'My Yii Application';
       </div>
       <div class="modal-body">
         <?php $form = ActiveForm::begin(['id' => 'upload-form',
-        'action'=> 'upload-file',
+        'action'=> 'fileman/upload-file',
         'options' => ['enctype' => 'multipart/form-data']]) ?>
 
         <?php echo $form->field($uploadForm, 'imageFile')->fileInput() ?>
-        <?php echo $form->field($uploadForm, 'parent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
+        <?php echo $form->field($uploadForm, 'idParent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
 
 
         <!-- <button>Submit</button> -->
@@ -104,12 +104,11 @@ $this->title = 'My Yii Application';
       <div class="modal-body">
         <?php $form = ActiveForm::begin([
           'id'=>'dirform',
-        'action'=> 'add-dir',
+        'action'=> 'fileman/add-dir',
         'options' => []]) ?>
 
         <?php echo $form->field($newDir, 'name')->textInput(['placeholder' => "Название папки"])->label('') ;?>
-       
-        <?php echo $form->field($newDir, 'parent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
+        <?php echo $form->field($newDir, 'idParent')->hiddenInput(['value' => $curFile->id])->label('') ;?>
 
         <!-- <button>Submit</button> -->
         <div class="modal-footer">

@@ -159,7 +159,7 @@ function delDir(event){
             // alert('ok');
             window.location.reload(false);
         //     $(event.target).remove();
-        //    console.log(res);
+           console.log(res);
         },
         error: function(){
             alert('Bad');
