@@ -118,6 +118,58 @@ class FilemanController extends Controller
                             );
     }
 
+    /**
+     *  Получения списка файлов
+     *
+     * @return
+     */
+    function actionGetListFiles(){
+        $id = Yii::$app->request->post('id') ? Yii::$app->request->post('id') : null;
+        $file = File::find()->where(['id' => $id ])->one();
+        $files = File::find()->where(['parent' => $id])->All();
+        $this->setBreadcrumbs( $file );
+
+        // ob_start();
+        // echo $this->renderPartial('files-block.php', ['files'=>$files]);
+        // $out1 = ob_get_contents();
+        // ob_end_clean();
+
+        $body = $this->renderPartial('files-block.php', ['files'=>$files], true);
+        $breadcrumbs = Yii::$app->session->get('breadcrumbs');
+
+        $arr = [ $breadcrumbs,  $body];
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        return $arr;
+        // return  "{'content': $body}";
+    }
+
+    /**
+     *  Скачивание файла
+     *
+     * @return
+     */
+    function actionDownloadFile()
+    {   
+        // return "ddddddddddddddddddddd";
+        $id = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
+        $file = File::find()->where(['id' => $id ])->one();
+
+        $path =  $file->path . '/' .  $file->name;
+        if( file_exists(  Yii::getAlias('@app').'/uploads/'. $path ) ){
+            $path = Yii::getAlias('@app').'/uploads/'. $path ;
+        Yii::$app->response->format = Response::FORMAT_RAW;
+        // Yii::$app->response->format = Response::FORMAT_JSON;
+        // return true;
+        // $file = file_get_contents($path);
+        //     return $file;
+            // return var_dump( \Yii::$app->response->sendFile($path) );
+            return  \Yii::$app->response->sendFile($path) ;
+        }
+        // return $this->goBack();
+        return 'File is upsent';
+    }
+
    /**
      *  Асинхронная обработка переименования файла/папки
      *
@@ -142,6 +194,7 @@ class FilemanController extends Controller
      * @return
      */
     public function actionDel(){
+
         $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
 
         if( $curId  ){
@@ -150,22 +203,31 @@ class FilemanController extends Controller
                             ->where(['id' => $curId])
                             ->one();
 
-            $curFullPath = $curFile->path . '/' . $curFile->name;
 
-            $childFiles = File::find()
-                                ->where(['like', 'path', $curFullPath]) 
-                                // ->where(['path'=> '/Хранилище/Китай']) 
-                                ->all();
-            // var_dump(  $childFiles );die;
+            if( $curFile->type == 'dir'){
 
-            foreach( $childFiles as $item ){
-                $item->delete();
+                $curFullPath = $curFile->path . '/' . $curFile->name;
+                // var_dump(  $curFullPath );die;
 
+
+                $childFiles = File::find()
+                                    ->where(['like', 'path', $curFullPath]) 
+                                    // ->where(['path'=> '/Хранилище/Китай']) 
+                                    ->all();
+
+                foreach( $childFiles as $item ){
+                    $item->delete();
+
+                }
+
+
+                $this->deleteDir(__DIR__ . '/../uploads'. $curFullPath);
             }
 
-
-            if( $curFile->type == 'dir' ) $this->deleteDir(__DIR__ . '/../uploads/'. $curFullPath);
-            if( $curFile->type == 'file' ) unlink(__DIR__ . '/../uploads/'. $curFile->path);
+            if( $curFile->type == 'file' ){
+                $curFullPath = $curFile->path . '/' . $curFile->name;
+                unlink(__DIR__ . '/../uploads'. $curFullPath);
+            } 
 
             $curFile->delete();
 
@@ -238,8 +300,10 @@ class FilemanController extends Controller
      * @return
      */
     public function setBreadcrumbs( $curFile ){
- 
+
         $session = Yii::$app->session;
+        // $session->set('breadcrumbs', []);
+
         $breadcrumbs = $session->get('breadcrumbs');
         $breadcrumbs = $breadcrumbs ? $breadcrumbs : [];
         // Убираем лишние ссылки при возврате на папку выше
@@ -250,27 +314,15 @@ class FilemanController extends Controller
             }
         }
         // Добавляем папку в которую вошли
-        $breadcrumbs[] = ['id' => $curFile->id, 'label' => $curFile->name, 'url' => ['/fileman?id='. $curFile->id . '&type='.$curFile->type]];
+        $breadcrumbs[] = ['id' => $curFile->id,'data-id' => $curFile->id, 'label' => $curFile->name, 'url' => ['/fileman']];
 
         $this->view->params['breadcrumbs'] = $breadcrumbs;
+
         $session->set('breadcrumbs', $breadcrumbs);
 
     }
 
-     /**
-     *  Скачивание файла
-     *
-     * @return
-     */
-    public function downloadFile($filename)
-    {
-        if( file_exists(  Yii::getAlias('@app').'/uploads/'. $filename ) ){
-            $path = Yii::getAlias('@app').'/uploads/'. $filename ;
 
-            return \Yii::$app->response->sendFile($path);
-        }
-        return $this->goBack();
-    }
 
     /**
      * Добавление папки
@@ -280,13 +332,11 @@ class FilemanController extends Controller
     public function actionAddDir()
     {
 
-        $name = Yii::$app->request->post('File')['name'];
-        $idParent = (int)Yii::$app->request->post('File')['idParent'];
+        $name = Yii::$app->request->post('filename');
+        $idParent = (int)Yii::$app->request->post('id');
         $dir = File::find()->where(['id'=>$idParent])->one();
         $nameParent = $dir->name ;
         $pathParent = $dir->path ;
-        // $nameParent = Yii::$app->request->post('File')['nameParent'];
-        // $pathParent = Yii::$app->request->post('File')['pathParent'];
 
         $newDir = new File();
         $newDir->name = $name;
@@ -294,17 +344,11 @@ class FilemanController extends Controller
         $newDir->type = 'dir';
         $newDir->size = 1000;
         $newDir->parent = $idParent;
-        // var_dump ( "name: ". $name.";  idParent: ". $idParent."; nameParent: ". $nameParent."; pathParent: ". $pathParent );
-        // die;        
-        // var_dump (  $newDir->path . '/'. $newDir->name);
-        // var_dump ( $newDir );
-        // die;
+  
         $newDir->save();
         // var_dump('../uploads' . $newDir->path . '/'. $newDir->name);
         mkdir( '../uploads' . $newDir->path . '/'. $newDir->name);
-        // var_dump($newDir->path);die;
 
-        // return true; 
     }
 
     /**

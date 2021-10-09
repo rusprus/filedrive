@@ -27,6 +27,7 @@
 // });
 
 
+// Добавление папки
 
 var $form = $('#dirform');
 $form.on('beforeSubmit', function() {
@@ -38,8 +39,7 @@ $form.on('beforeSubmit', function() {
         type: 'POST',
         data: data,
         success: function (data) {
-            // Implement successful
-            console.log(data);
+            // console.log(data);
             document.location.reload();
         },
         error: function(jqXHR, errMsg) {
@@ -53,32 +53,198 @@ $form.on('beforeSubmit', function() {
 // Делегирование событий
 
 document.addEventListener('contextmenu', function(event) {
-    
-    if (event.target.dataset.contextmenu != undefined) {
-        contextMenu(event)
+     removeDropdownMenu()
+    if (event.target.dataset.contextmenuFolder != undefined) {
+        
+        contextMenuFolder(event)
     }   
+    if (event.target.dataset.contextmenuFile != undefined) {
+        contextMenuFile(event)
+    } 
+    
   });
 
+  document.addEventListener('click', function(event) {
+    removeDropdownMenu()
+    if (event.target.dataset.click != undefined) {
+        clickOnHref(event)
+    }   
 
-//Обработка контекстного меню для ссылок файлов
+    if (event.target.dataset.addFolder != undefined) {
+        addFolder(event)
+    } 
+    if (event.target.dataset.uploadFile != undefined) {
+        elem = document.getElementById('uploadform-idparent')
+        id = document.querySelector('.breadcrumb').lastElementChild.children[0].dataset.id;
+        elem.value = id
+        // alert(elem.value)
+    } 
 
-function contextMenu(event){
+    // if (event.target.dataset.delFile != undefined) {
+    //     addFolder(event)
+    // } 
+  });
+
+/**
+  *  Запрос на добавление папки
+  *
+  */
+ function addFolder(event){
+
+    filename = document.getElementById('newFolder').value
+    id = document.querySelector('.breadcrumb').lastElementChild.children[0].dataset.id;
+
+    $.ajax({
+        type: 'POST',
+        url: 'fileman/add-dir',
+        data:{ 'id': id,
+                'filename': filename
+        },
+        success: function(res){
+            getListFiles(id)
+        },
+        error: function(){
+            alert('Bad');
+        }
+    })
+    $('#adddirModal').modal('toggle');
+ }
+
+
+
+function clickOnHref(event){
+    event.preventDefault();
+
+    id = event.target.dataset.id;
+    type = event.target.dataset.type;
+
+    if( type == 'dir' ) getListFiles(id);
+    if( type == 'file' ) downloadFile(event.target);
+
+    // console.log(event.target.dataset.id);
+    // console.log(event.target.dataset.type);
+}
+
+/**
+  *  Запрос на скачивание файла
+  *
+  */
+function  downloadFile(label){
+            
+            attrLabel = label.attributes;
+            a =  document.createElement('a');
+            console.log('fileman/download-file&id='+label.getAttribute('data-id'))
+            a.setAttribute('href', 'fileman/download-file?id='+label.getAttribute('data-id'))
+            a.click();
+
+
+
+    // $.ajax({
+    //     type: 'POST',
+    //     url: 'fileman/download-file',
+    //     data:{ 'id': id,
+    //     },
+    //     // dataType: 'binary',  
+    //     success: function(res){
+    //         alert('ok');
+
+    //         console.log(res);
+    //         // let reader = new FileReader(); // без аргументов
+    //         let blob = new Blob([res]);
+    //         // let blob = new Blob([res]);
+
+    //         // console.log( blob );
+    //         // console.log(reader.readAsArrayBuffer(blob));
+
+
+    //         var link = document.createElement("a");
+    //         link.setAttribute("href", URL.createObjectURL(blob));
+    //         link.setAttribute("download", "1-1.jpg");
+    //         link.click();
+    //     },
+    //     error: function(){
+    //         alert('Bad');
+    //     }
+    // })
+}
+
+/**
+  *  Запрос на получение списка  файлов в папке
+  *
+  */
+
+function getListFiles(id){
+
+    $.ajax({
+        type: 'POST',
+        url: 'fileman/get-list-files',
+        data:{ 'id': id,
+        },
+        success: function(res){
+            changeBreadcrumb(res[0]);
+            $('._content').html(res[1]) ;
+        },
+        error: function(){
+            alert('Bad');
+        }
+    })
+
+}
+
+
+// Изменение хлебных крошек
+
+function changeBreadcrumb(breadcrumbParam){
+
+    breadcrumb = $('.breadcrumb').html('');
+    breadcrumbItem = $("<li class='breadcrumb-item'><a href='#'></a></li>");
+    breadcrumbParam.forEach(element => {
+
+        breadcrumbItem.children('a').eq(0).attr('href', element.url);
+        breadcrumbItem.children('a').eq(0).attr('data-id', element.id); 
+        breadcrumbItem.children('a').eq(0).attr('data-type', "dir"); 
+        breadcrumbItem.children('a').eq(0).attr('data-click', ""); 
+        breadcrumbItem.children('a').eq(0).text(element.label);
+        breadcrumbItem.clone().appendTo(breadcrumb);
+
+    });
+}
+
+
+// Обработка контекстного меню для папок
+
+function contextMenuFolder(event){
     event.preventDefault();
     event.stopPropagation();
-    hrefFile = $(event.target);
-    if(!hrefFile.find('.dropdown-menu').length){
-        removeDropdownMenu();
-        hrefToId = hrefFile.attr('href') ;
+    folder = event.target;
+    id = folder.dataset.id
+
+
         contextMenuHtml = `<div class="dropdown-menu show" >
-                                <a class="dropdown-item" onclick="delDir(event)" href="`+hrefToId+`&delete=true">Удалить</a>
-                                <a class="dropdown-item" onclick="renameDir(event)" href="`+hrefToId+`">Переименовать</a>
-                                <a class="dropdown-item" href="`+hrefToId+`">Перейти</a>
+                                <a class="dropdown-item" data-id="`+id+`" onclick="delDir(event)" href="#">Удалить</a>
+                                <a class="dropdown-item" data-id="`+id+`" onclick="renameDir(event)" href="#">Переименовать</a>
+                                <a class="dropdown-item" data-id="`+id+`" href="#">Перейти</a>
                             </div>`;
-        hrefFile.append(contextMenuHtml);
+    folder.insertAdjacentHTML('beforeend', contextMenuHtml);
        
-    }else{
-        removeDropdownMenu();
-    }
+
+}
+
+// Обработка контекстного меню для файлов
+
+function contextMenuFile(event){
+    event.preventDefault();
+    event.stopPropagation();
+    folder = event.target;
+    id = folder.dataset.id
+
+        contextMenuHtml = `<div class="dropdown-menu show" >
+                                <a class="dropdown-item" data-id="`+id+`" onclick="delDir(event)" href="#">Удалить</a>
+                                <a class="dropdown-item" data-id="`+id+`" onclick="renameDir(event)" href="#">Переименовать</a>
+                                <a class="dropdown-item" data-id="`+id+`" href="#">Перейти</a>
+                            </div>`;
+        folder.insertAdjacentHTML('beforeend', contextMenuHtml);
+       
 }
 
 
@@ -87,22 +253,27 @@ function contextMenu(event){
 function renameDir(event){
     event.preventDefault()
 
-    dir = $($(event.target).parents('.dir'))
-    hrefFile = $($(event.target).parents('.dir a'))
+    id = event.target.dataset.id;
+    dir = $(document.querySelector('div [data-id="'+id+'"]'));
+    // labell = document.querySelector('div .label [data-id="84"]'); 
+
+    label = $(dir.children()[1]);
+
     removeDropdownMenu();
-    inputRename = $('<input type = "text">').attr('value', hrefFile.text());
+    inputRename = $('<input type = "text">').attr('value', label.text());
+
     inputRename.on('keydown', function(e) {
         if (e.keyCode === 13) {
-            hrefFile.text( this.value );
+
+            label.text( this.value );
             this.remove();
-            dir.append(hrefFile);
-            hrefFile.on('contextmenu', contextMenu);
-            // console.log(hrefFile.text);
-            sendRename(hrefFile);
+            dir.append(label);
+            label.on('contextmenu', contextMenuFolder);
+            sendRename(label);
         }
         
     });
-    hrefFile.remove();
+    label.remove();
     dir.append(inputRename);
     inputRename.focus();
     removeDropdownMenu();
@@ -111,22 +282,16 @@ function renameDir(event){
 
 // Запрос на изменеие файла
 
-function sendRename(hrefFile){
-    url = location.origin + hrefFile.attr('href') + '&newname=' + hrefFile.text();
-    url = new URL( url );
-    qHost = url.origin;
-    qPath = url.pathname;
-    
-    qParamNewname = url.searchParams.get('newname');
-    qParamId = url.searchParams.get('id');
-  
+function sendRename(label){
 
+    newName = label.text();
+    id = label.attr('data-id');
 
     $.ajax({
         type: 'GET',
         url: 'fileman/rename',
-        data:{ 'newname': qParamNewname,
-                'id': qParamId,
+        data:{ 'newname': newName,
+                'id': id,
         },
         success: function(){
             // alert('ok');
@@ -138,28 +303,21 @@ function sendRename(hrefFile){
 
 }
 
-// Удаление файла или папки
+// Запрос на удаление файла или папки
 
 function delDir(event){
     event.preventDefault()
-    // console.log(event.target);
-    url = location.origin + hrefFile.attr('href');
-    url = new URL( url );
-    qParamId = url.searchParams.get('id');
-    // console.log( qParamId );
 
-
+    id = event.target.dataset.id;
     $.ajax({
         type: 'GET',
         url: 'fileman/del',
         data:{ 
-            'id': qParamId,
+            'id': id,
         },
         success: function(res){
-            // alert('ok');
-            window.location.reload(false);
-        //     $(event.target).remove();
-           console.log(res);
+            dir = $(document.querySelector('div [data-id="'+id+'"]'));
+            dir.remove();
         },
         error: function(){
             alert('Bad');
