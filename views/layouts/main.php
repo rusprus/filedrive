@@ -39,6 +39,7 @@ AppAsset::register($this);
         'items' => [
             ['label' => 'Хранилище', 'url' => ['/site/fileman']],
             ['label' => 'Контакты', 'url' => ['/site/contact']],
+            ['label' => 'Регистрация', 'url' => ['/site/signup']],
             // ['label' => 'Контакты', 'url' => ['/site/about']],
             Yii::$app->user->isGuest ? (
                 ['label' => 'Вход', 'url' => ['/site/login']]

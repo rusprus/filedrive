@@ -3,7 +3,7 @@
 namespace app\models;
 
 use Yii;
-use yii\base\Model;
+use yii\db\ActiveRecord;
 
 /**
  * LoginForm is the model behind the login form.
@@ -11,7 +11,7 @@ use yii\base\Model;
  * @property-read User|null $user This property is read-only.
  *
  */
-class LoginForm extends Model
+class LoginForm extends ActiveRecord
 {
     public $username;
     public $password;
@@ -73,7 +73,7 @@ class LoginForm extends Model
     public function getUser()
     {
         if ($this->_user === false) {
-            $this->_user = User::findByUsername($this->username);
+            $this->_user = User::findOne(['username' => $this->username]); 
         }
 
         return $this->_user;

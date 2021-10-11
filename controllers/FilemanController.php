@@ -82,7 +82,7 @@ class FilemanController extends Controller
         $newDir = new File();   
 
          // Ищем в базе папку или файл
-        $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
+        $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : 1;
         $curFile = File::find()->where(['id' => $curId ])->one();
         $files = File::find()->where(['parent' => $curFile->id])->All();
 
@@ -104,7 +104,7 @@ class FilemanController extends Controller
      * @return
      */
     function actionGetListFiles(){
-        $id = Yii::$app->request->post('id') ? Yii::$app->request->post('id') : null;
+        $id = Yii::$app->request->post('id') ? (int)Yii::$app->request->post('id') : null;
         $file = File::find()->where(['id' => $id ])->one();
         $files = File::find()->where(['parent' => $id])->All();
         $this->setBreadcrumbs( $file );
@@ -122,7 +122,7 @@ class FilemanController extends Controller
      */
     function actionDownloadFile()
     {   
-        $id = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : 1;
+        $id = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : 1;
         $file = File::find()->where(['id' => $id ])->one();
         $path =  $file->path . '/' .  $file->name;
         if( file_exists(  Yii::getAlias('@app').'/uploads/'. $path ) ){
@@ -143,7 +143,8 @@ class FilemanController extends Controller
     public function actionRename(){
 
         $newname = Yii::$app->request->get('newname') ? Yii::$app->request->get('newname') : null;
-        $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
+        $newname = htmlspecialchars($newname);
+        $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
 
         if( $newname &&  $curId  ){
             $this->renameFile( $curId, $newname);
@@ -159,7 +160,7 @@ class FilemanController extends Controller
      */
     public function actionDel(){
 
-        $curId = Yii::$app->request->get('id') ? Yii::$app->request->get('id') : null;
+        $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
 
         if( $curId  ){
             $curFile = File::find()
@@ -194,6 +195,7 @@ class FilemanController extends Controller
     {
 
         $name = Yii::$app->request->post('filename');
+        $name = htmlspecialchars($name);
         $idParent = (int)Yii::$app->request->post('id');
         
         $dir = File::find()->where(['id'=>$idParent])->one();
@@ -223,7 +225,7 @@ class FilemanController extends Controller
         if (Yii::$app->request->isPost) { 
 
             $uploadForm->imageFile = UploadedFile::getInstance($uploadForm, 'imageFile');
-            $uploadForm->idParent = Yii::$app->request->post('UploadForm')['idParent'];
+            $uploadForm->idParent = (int)Yii::$app->request->post('UploadForm')['idParent'];
 
             $parenDir = File::find()->where(['id' => $uploadForm->idParent ])->one();
 

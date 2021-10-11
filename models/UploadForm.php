@@ -18,9 +18,9 @@ class UploadForm extends Model
     {
         return [
             [['imageFile'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg, txt'],
-            [['idParent'], 'safe'],
-            [['nameParent'], 'safe'],
-            [['pathParent'], 'safe'],
+            [['idParent'], 'integer'],
+            [['nameParent'], 'trim'],
+            [['pathParent'], 'trim'],
             // [['imageFile'], 'skipOnEmpty' => false, 'extensions' => 'png, jpg, txt'],
         ];
     }
