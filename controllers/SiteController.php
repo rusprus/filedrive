@@ -123,7 +123,19 @@ class SiteController extends Controller
             $user = new User();
             $user->username = $model->username;
             $user->password = \Yii::$app->security->generatePasswordHash($model->password);
+            
+
             if($user->save()){
+                $file = new File();
+                $file->name = 'Хранилище';
+                $file->path = '';
+                $file->type = 'dir';
+                $file->size = 1000;
+                $file->parent = 0;
+                $file->user_id = $user->id;
+                $file->save();
+                mkdir( '../uploads/' . $user->id );
+                mkdir( '../uploads/' . $user->id . '/Хранилище');
                 return $this->goHome();
             }
         }
@@ -161,4 +173,7 @@ class SiteController extends Controller
     {
         return $this->render('about');
     }
+
+
+
 }

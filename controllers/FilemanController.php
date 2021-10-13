@@ -10,6 +10,8 @@ use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\File;
+use app\models\User;
+
 
 use app\models\UploadForm;
 use yii\web\UploadedFile;
@@ -26,10 +28,10 @@ class FilemanController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout'],
+                'only' => ['logout', 'fileman'],
                 'rules' => [
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['logout', 'fileman'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -80,10 +82,16 @@ class FilemanController extends Controller
     {
         $uploadForm = new UploadForm();
         $newDir = new File();   
+        $userId = Yii::$app->user->identity->id;
 
          // Ищем в базе папку или файл
-        $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : 1;
-        $curFile = File::find()->where(['id' => $curId ])->one();
+        if( !$curId = Yii::$app->request->get('id') ){
+            $curFile = File::find()->where(['path' => '' , 'user_id' => $userId ])->one();
+
+        }else{
+            $curFile = File::find()->where(['id' => $curId , 'user_id' => $userId ])->one();
+        } 
+       
         $files = File::find()->where(['parent' => $curFile->id])->All();
 
         if( $curFile->type == 'dir'){
@@ -122,10 +130,12 @@ class FilemanController extends Controller
      */
     function actionDownloadFile()
     {   
+        $userId = Yii::$app->user->identity->id;
+
         $id = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : 1;
         $file = File::find()->where(['id' => $id ])->one();
-        $path =  $file->path . '/' .  $file->name;
-        if( file_exists(  Yii::getAlias('@app').'/uploads/'. $path ) ){
+        $path = $userId . $file->path . '/' .  $file->name;
+        if( file_exists(  Yii::getAlias('@app').'/uploads/'.  $path ) ){
 
             $path = Yii::getAlias('@app').'/uploads/'. $path ;
             Yii::$app->response->format = Response::FORMAT_RAW;
@@ -163,6 +173,8 @@ class FilemanController extends Controller
         $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
 
         if( $curId  ){
+
+            $userId = Yii::$app->user->identity->id;
             $curFile = File::find()
                             ->where(['id' => $curId])
                             ->one();
@@ -170,15 +182,16 @@ class FilemanController extends Controller
                 $curFullPath = $curFile->path . '/' . $curFile->name;
                 $childFiles = File::find()
                                     ->where(['like', 'path', $curFullPath]) 
+                                    ->andWhere([ 'user_id' => $userId ])
                                     ->all();
                 foreach( $childFiles as $item ){
                     $item->delete();
                 }
-                $this->deleteDir(__DIR__ . '/../uploads'. $curFullPath);
+                $this->deleteDir(__DIR__ . '/../uploads/' . $userId . $curFullPath);
             }
             if( $curFile->type == 'file' ){
                 $curFullPath = $curFile->path . '/' . $curFile->name;
-                unlink(__DIR__ . '/../uploads'. $curFullPath);
+                unlink(__DIR__ . '/../uploads/' . $userId . $curFullPath);
             } 
             $curFile->delete();
             return true;
@@ -208,9 +221,11 @@ class FilemanController extends Controller
         $newDir->type = 'dir';
         $newDir->size = 1000;
         $newDir->parent = $idParent;
+        $newDir->user_id = Yii::$app->user->identity->id;
   
         $newDir->save();
-        mkdir( '../uploads' . $newDir->path . '/'. $newDir->name);
+ 
+        mkdir( '../uploads/' . $newDir->user_id . $newDir->path . '/'. $newDir->name);
 
     }
 
@@ -239,6 +254,10 @@ class FilemanController extends Controller
                 $newFile->type = 'file';
                 $newFile->size = 1000;
                 $newFile->parent = $parenDir->id;
+                $newFile->user_id = Yii::$app->user->identity->id;
+
+                
+
                 $newFile->save();
                 return $this->redirect(Yii::$app->request->referrer);
             }
@@ -276,16 +295,19 @@ class FilemanController extends Controller
     public function renameFile( $curId, $newname){
         
         $curFile = File::find()->where(['id' => $curId ])->one();
+        $userId = Yii::$app->user->identity->id;
 
-        rename(Yii::getAlias('@app').'/uploads'. $curFile->path . '/' . $curFile->name,  Yii::getAlias('@app').'/uploads' . $curFile->path . '/' . $newname);
+
+        rename(Yii::getAlias('@app').'/uploads/'. $curFile->user_id . $curFile->path . '/' . $curFile->name,  Yii::getAlias('@app').'/uploads/' . $curFile->user_id  . $curFile->path . '/' . $newname);
 
         $oldPath = $curFile->path . '/' . $curFile->name;
         $curFile->name = $newname;
         $newPath = $curFile->path . '/' . $curFile->name;
         $files = new File();
         $result = $files->find()
-                       ->from('files')
+                        ->from('files')
                         ->where(['like', 'path', $oldPath]) 
+                        ->andWhere([ 'user_id' => $userId ])
                         ->all();
         foreach(  $result as $item ){
             $item->path =  preg_replace( "#".$oldPath."#", $newPath, $item->path);
@@ -317,6 +339,19 @@ class FilemanController extends Controller
         $this->view->params['breadcrumbs'] = $breadcrumbs;
         $session->set('breadcrumbs', $breadcrumbs);
     }
+
+
+    // public function actionGet(){
+
+    //     $userId = Yii::$app->user->identity->id;
+    //     $result = File::find()
+    //                    ->from('files')
+    //                     ->where(['like', 'path', '/Хранилище']) 
+    //                    ->andWhere([ 'user_id' => $userId ])
+    //                     ->all();
+    //     return var_dump($result);
+
+    // }
 
     
 }

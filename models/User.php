@@ -80,4 +80,10 @@ class User extends ActiveRecord implements IdentityInterface
         
         return \Yii::$app->security->validatePassword($password, $this->password);
     }
+
+
+    public function getFile()
+    {
+        return $this->hasOne(File::class, ['id' => 'file_id'])->inverseOf('user');
+    }
 }

@@ -1,6 +1,6 @@
 <?php 
 namespace app\models;
-
+use Yii;
 use yii\base\Model;
 use yii\web\UploadedFile;
 
@@ -13,6 +13,7 @@ class UploadForm extends Model
     public $idParent;
     public $nameParent;
     public $pathParent;
+    public $userId;
 
     public function rules()
     {
@@ -21,6 +22,7 @@ class UploadForm extends Model
             [['idParent'], 'integer'],
             [['nameParent'], 'trim'],
             [['pathParent'], 'trim'],
+            [['userId'], 'safe'],
             // [['imageFile'], 'skipOnEmpty' => false, 'extensions' => 'png, jpg, txt'],
         ];
     }
@@ -29,10 +31,8 @@ class UploadForm extends Model
     {
         if ($this->validate()) {
 
-            // var_dump($this);
-            // var_dump('../uploads' . $this->pathParent . $this->nameParent . '/'. $this->imageFile->baseName . '.' . $this->imageFile->extension);
-            // die;
-            $this->imageFile->saveAs('../uploads' . $this->pathParent . '/'. $this->nameParent . '/'. $this->imageFile->baseName . '.' . $this->imageFile->extension);
+            $userId = Yii::$app->user->identity->id;
+            $this->imageFile->saveAs('../uploads/'. $userId  . $this->pathParent . '/'. $this->nameParent . '/'. $this->imageFile->baseName . '.' . $this->imageFile->extension);
             return true;
         } else {
             return false;
