@@ -241,7 +241,7 @@ function delDir(event){
     event.preventDefault()
     id = event.target.dataset.id;
     $.ajax({
-        type: 'GET',
+        type: 'POST',
         url: 'fileman/del',
         data:{ 
             'id': id,

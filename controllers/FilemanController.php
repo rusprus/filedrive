@@ -82,17 +82,19 @@ class FilemanController extends Controller
     {
         $uploadForm = new UploadForm();
         $newDir = new File();   
-        $userId = Yii::$app->user->identity->id;
 
          // Ищем в базе папку или файл
         if( !$curId = Yii::$app->request->get('id') ){
-            $curFile = File::find()->where(['path' => '' , 'user_id' => $userId ])->one();
+
+            $curFile = File::getUserRoot( $curId );
 
         }else{
-            $curFile = File::find()->where(['id' => $curId , 'user_id' => $userId ])->one();
+
+            $curFile = File::getFileById( $curId );
+
         } 
        
-        $files = File::find()->where(['parent' => $curFile->id])->All();
+        $files = File::getFilesByParentid( $curFile->id );
 
         if( $curFile->type == 'dir'){
             $this->setBreadcrumbs( $curFile );  
@@ -112,10 +114,14 @@ class FilemanController extends Controller
      * @return
      */
     function actionGetListFiles(){
+
         $id = Yii::$app->request->post('id') ? (int)Yii::$app->request->post('id') : null;
-        $file = File::find()->where(['id' => $id ])->one();
-        $files = File::find()->where(['parent' => $id])->All();
+
+        $file = File::getFileById( $id );
+        $files = File::getFilesByParentId( $id );
+
         $this->setBreadcrumbs( $file );
+
         $body = $this->renderPartial('files-block.php', ['files'=>$files], true);
         $breadcrumbs = Yii::$app->session->get('breadcrumbs');
         $arr = [ $breadcrumbs,  $body];
@@ -130,19 +136,9 @@ class FilemanController extends Controller
      */
     function actionDownloadFile()
     {   
-        $userId = Yii::$app->user->identity->id;
+        $id = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
 
-        $id = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : 1;
-        $file = File::find()->where(['id' => $id ])->one();
-        $path = $userId . $file->path . '/' .  $file->name;
-        if( file_exists(  Yii::getAlias('@app').'/uploads/'.  $path ) ){
-
-            $path = Yii::getAlias('@app').'/uploads/'. $path ;
-            Yii::$app->response->format = Response::FORMAT_RAW;
-     
-            return  \Yii::$app->response->sendFile($path) ;
-        }
-        return 'File is upsent';
+        return $id ? File::downloadFileById( $id ) : false;
     }
 
    /**
@@ -153,80 +149,34 @@ class FilemanController extends Controller
     public function actionRename(){
 
         $newname = Yii::$app->request->get('newname') ? Yii::$app->request->get('newname') : null;
-        $newname = htmlspecialchars($newname);
         $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
 
-        if( $newname &&  $curId  ){
-            $this->renameFile( $curId, $newname);
-            return true;
-        } 
-        return false;
+        $newname && $curId ? File::renameFileById( $curId, $newname) : false;
     }
 
     /**
-     *  Удаление файла/папки
+     *  Асинхронное удаление файла/папки
      *
      * @return
      */
     public function actionDel(){
 
-        $curId = Yii::$app->request->get('id') ? (int)Yii::$app->request->get('id') : null;
-
-        if( $curId  ){
-
-            $userId = Yii::$app->user->identity->id;
-            $curFile = File::find()
-                            ->where(['id' => $curId])
-                            ->one();
-            if( $curFile->type == 'dir'){
-                $curFullPath = $curFile->path . '/' . $curFile->name;
-                $childFiles = File::find()
-                                    ->where(['like', 'path', $curFullPath]) 
-                                    ->andWhere([ 'user_id' => $userId ])
-                                    ->all();
-                foreach( $childFiles as $item ){
-                    $item->delete();
-                }
-                $this->deleteDir(__DIR__ . '/../uploads/' . $userId . $curFullPath);
-            }
-            if( $curFile->type == 'file' ){
-                $curFullPath = $curFile->path . '/' . $curFile->name;
-                unlink(__DIR__ . '/../uploads/' . $userId . $curFullPath);
-            } 
-            $curFile->delete();
-            return true;
-        } 
-        return false;
+        $curId = Yii::$app->request->post('id') ? (int)Yii::$app->request->post('id') : null;
+      
+        return $curId ? File::deleteFileById( $curId ) :  false;
     }
 
     /**
-     * Добавление папки
+     * Асинхронное добавление папки
      *
      * @return
      */
     public function actionAddDir()
     {
-
         $name = Yii::$app->request->post('filename');
-        $name = htmlspecialchars($name);
         $idParent = (int)Yii::$app->request->post('id');
-        
-        $dir = File::find()->where(['id'=>$idParent])->one();
-        $nameParent = $dir->name ;
-        $pathParent = $dir->path ;
 
-        $newDir = new File();
-        $newDir->name = $name;
-        $newDir->path = $pathParent . '/' . $nameParent ;
-        $newDir->type = 'dir';
-        $newDir->size = 1000;
-        $newDir->parent = $idParent;
-        $newDir->user_id = Yii::$app->user->identity->id;
-  
-        $newDir->save();
- 
-        mkdir( '../uploads/' . $newDir->user_id . $newDir->path . '/'. $newDir->name);
-
+        return $name && $idParent ?  File::addDirByParentId( $idParent, $name ) :  false;
     }
 
     /**
@@ -238,11 +188,13 @@ class FilemanController extends Controller
         $uploadForm = new UploadForm();
 
         if (Yii::$app->request->isPost) { 
+            $userId = Yii::$app->user->identity->id;
+            
 
             $uploadForm->imageFile = UploadedFile::getInstance($uploadForm, 'imageFile');
             $uploadForm->idParent = (int)Yii::$app->request->post('UploadForm')['idParent'];
 
-            $parenDir = File::find()->where(['id' => $uploadForm->idParent ])->one();
+            $parenDir = File::find()->where(['id' => $uploadForm->idParent, 'user_id' => $userId ])->one();
 
             $uploadForm->nameParent = $parenDir->name;
             $uploadForm->pathParent = $parenDir->path;
@@ -254,67 +206,12 @@ class FilemanController extends Controller
                 $newFile->type = 'file';
                 $newFile->size = 1000;
                 $newFile->parent = $parenDir->id;
-                $newFile->user_id = Yii::$app->user->identity->id;
-
-                
-
+                $newFile->user_id = $userId;
                 $newFile->save();
                 return $this->redirect(Yii::$app->request->referrer);
             }
         }
     }
-
-    /**
-     *  Функция удаления  файла/папки и всего содержимого
-     *
-     * @return
-     */
-    public static function deleteDir($dirPath) {
-        if (! is_dir($dirPath)) {
-            throw new InvalidArgumentException("$dirPath must be a directory");
-        }
-        if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
-            $dirPath .= '/';
-        }
-        $files = glob($dirPath . '*', GLOB_MARK);
-        foreach ($files as $file) {
-            if (is_dir($file)) {
-                self::deleteDir($file);
-            } else {
-                unlink($file);
-            }
-        }
-        rmdir($dirPath);
-    }
-
-      /**
-     *  Функция переименования   файла/папки
-     *
-     * @return
-     */
-    public function renameFile( $curId, $newname){
-        
-        $curFile = File::find()->where(['id' => $curId ])->one();
-        $userId = Yii::$app->user->identity->id;
-
-
-        rename(Yii::getAlias('@app').'/uploads/'. $curFile->user_id . $curFile->path . '/' . $curFile->name,  Yii::getAlias('@app').'/uploads/' . $curFile->user_id  . $curFile->path . '/' . $newname);
-
-        $oldPath = $curFile->path . '/' . $curFile->name;
-        $curFile->name = $newname;
-        $newPath = $curFile->path . '/' . $curFile->name;
-        $files = new File();
-        $result = $files->find()
-                        ->from('files')
-                        ->where(['like', 'path', $oldPath]) 
-                        ->andWhere([ 'user_id' => $userId ])
-                        ->all();
-        foreach(  $result as $item ){
-            $item->path =  preg_replace( "#".$oldPath."#", $newPath, $item->path);
-            $item->save();
-        }
-        $curFile->save();
-  }
 
    /**
      *  Функция установки хлебных крошек
@@ -339,19 +236,5 @@ class FilemanController extends Controller
         $this->view->params['breadcrumbs'] = $breadcrumbs;
         $session->set('breadcrumbs', $breadcrumbs);
     }
-
-
-    // public function actionGet(){
-
-    //     $userId = Yii::$app->user->identity->id;
-    //     $result = File::find()
-    //                    ->from('files')
-    //                     ->where(['like', 'path', '/Хранилище']) 
-    //                    ->andWhere([ 'user_id' => $userId ])
-    //                     ->all();
-    //     return var_dump($result);
-
-    // }
-
     
 }
