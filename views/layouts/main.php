@@ -38,7 +38,7 @@ AppAsset::register($this);
         'options' => ['class' => 'navbar-nav'],
         'items' => [
             !Yii::$app->user->isGuest ?  ['label' => 'Хранилище', 'url' => ['/site/fileman']] : "",
-            !Yii::$app->user->isGuest ? ['label' => 'Контакты', 'url' => ['/site/contact']] : "",
+            !Yii::$app->user->isGuest ? ['label' => 'Контакты', 'url' => ['/contacts/']] : "",
             Yii::$app->user->isGuest ?  ['label' => 'Регистрация', 'url' => ['/site/signup']]:"",
             // ['label' => 'Контакты', 'url' => ['/site/about']],
 

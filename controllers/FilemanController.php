@@ -74,7 +74,7 @@ class FilemanController extends Controller
     }
 
     /**
-     * Вывод корны файлового менеджера
+     * Вывод корня файлового менеджера
      *
      * @return string
      */

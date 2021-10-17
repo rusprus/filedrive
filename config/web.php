@@ -12,11 +12,18 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    'modules' => [
+        'contacts' => [
+            'class' => 'app\modules\contacts\Module',
+            // ... другие настройки модуля ...
+        ],
+    ],
     'components' => [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'MSI5ZKAtztEH5y3upuUt0SFzGGJsK8st',
         ],
+        
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
@@ -51,7 +58,9 @@ $config = [
 
                 'download/<filename>' => 'fileman/download',
                 // 'dir/<filename>' => 'site/change-dir',
-                'fileman' => 'fileman/fileman',
+                'fileman' => 'fileman/fileman', 
+                'contacts' => 'contacts/default', 
+                'contacts/default' => 'contacts/default', 
                 // '""' => 'site/index',
                 '<action>' => 'site/<action>',
             ],

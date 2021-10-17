@@ -6,7 +6,10 @@ use yii\widgets\ActiveForm;
 use yii\widgets\Breadcrumbs;
 use yii\helpers\Url;
 
-// $this->params['breadcrumbs']=[];
+use app\assets\FilemanAsset;
+
+FilemanAsset::register($this);  // $this - представляет собой объект представления
+
 $this->title = 'My Yii Application';
 ?>
 
