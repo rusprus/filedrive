@@ -20,18 +20,32 @@ class UploadForm extends Model
         return [
             // [['imageFile'], 'file', 'skipOnEmpty' => false, 'extensions' => 'vcf'],
             [['imageFile'], 'file', 'skipOnEmpty' => false],
+            [['imageFile'], 'validateImageFile', 'skipOnEmpty' => false],
         ];
+    }
+
+    public function validateImageFile($attribute, $params)
+    {
+        $name = $this->$attribute->name;
+        $path_parts = pathinfo($name);
+
+        if( $path_parts['extension'] !== 'vcf' ){
+            
+            $this->addError($attribute, "Расширение должно быть vcf");
+        }
     }
     
     public function upload()
     {
 
         if ($this->validate()) {
+
             $this->imageFile->saveAs(__DIR__ .'/../uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
             $this->writeToDb();
             
             return true;
         } else {
+
             return false;
         }
     }

@@ -48,7 +48,7 @@ class Cell{
     updateContent(){
 
         $.ajax({
-            url: "contacts/default/update",
+            url: "/contacts/default/update",
             type: "POST",
             data: {id : this.rowId, 
                     field : this.fieldId,
@@ -81,34 +81,53 @@ class Cell{
 
 //  Код изменения ячейки и подачи события "изменения" для записи в БД 
 
-    $(function () {
-    $(".table-data td").dblclick(function () {
+$(function () {
 
-        let content = $(this).text();
-        let fieldId = $(this).attr('class');
-        let rowId = $(this).parent().children().first().text();
+    // Делегируем событие выбора ячейки на таблицу
+    $("table").dblclick(function (event) {
+        
+        if( event.target.tagName == 'TD' ){
 
-        cell = new Cell( fieldId, rowId, content );
+            let targetCell = $(event.target);
 
-        $(this).html("<input type='text' value='" + cell.getContent() + "' />");
-        $(this).children().focus();
-        $(this).children().keypress(function (e) {
-            if (e.which == 13) {
+            // Получаем содержимое ячейки 
+            let content = targetCell.text();
 
-                cell.setContent( $(this).val() );
-                $(this).parent().text(cell.getContent());
+            // Получаем название столбца ячейки 
+            let fieldId = targetCell.attr('class');
 
-            }
-        });
-        $(this).children().blur(function () {
-            $(this).parent().text(cell.getContent());
-        });
+            // Получаем номер сторки ячейки 
+            let rowId = targetCell.parent().children().first().text();
+    
+            // Создаем обьект ячейки для манипуляции содержимом и взаимодействия с БД
+            cell = new Cell( fieldId, rowId, content );
+
+            targetCell.html("<input type='text' value='" + cell.getContent() + "' />");
+            targetCell.children().focus();
+            targetCell.children().keypress(function (e) {
+                if (e.which == 13) {
+
+                    cell.setContent( targetCell.children().val() );
+
+                    targetCell.text(cell.getContent());
+    
+                }else{
+          
+                }
+            });
+            targetCell.children().blur(function () {
+                if( cell.getContent() ) targetCell.text(cell.getContent());
+                
+            });
+
+        }
+       
     });
 
 //  Код фильтрации столбцов 
 
     
-    function FilterTable(table) {
+    function filterTable(table) {
 
         let all_rows = table.find('tr');
         let data_rows = all_rows.slice(1);
@@ -144,13 +163,72 @@ class Cell{
         }
     }
 
-    table1 = new FilterTable($(this).find('table'));
+
 
     $(".table-filters input").on("input", function () {
 
+        table1 = new filterTable($(document).find('table'));
+
+
         table1.filter();
-        // filterTable( $(this).parents('table') );
+
     });
+});
 
 
+
+// Функция показа дополнительного контента при прокрутке
+function scrollMore(){
+
+    var $target = $('#showmore-triger');
+
+	if (block_show) {
+
+		return false;
+	}
+
+	var wt = $(window).scrollTop();
+	var wh = $(window).height();
+	var et = $target.offset().top;
+	var eh = $target.outerHeight();
+	var dh = $(document).height();   
+
+	// if (wt + wh >= et || wh + wt == dh || eh + et < wh){
+        if ( wh + wt == dh || eh + et < wh){
+
+		var page = $target.attr('data-page');	
+		page++;
+		block_show = true;
+
+		$.ajax({ 
+			// url: '/contacts/default/get-contacts?page=' + page,  
+			url: '/contacts/default/get-contacts?page=' + page,  
+			dataType: 'html',
+			success: function(data){
+				$('#filter-table').append(data);
+				block_show = false;
+			}
+		});
+
+		$target.attr('data-page', page);
+		if (page ==  $target.attr('data-max')) {
+
+			$target.remove();
+		}
+
+	}
+
+}
+
+// Событие вызываемое при прокрутке
+var block_show = false;
+
+$(window).scroll(function(){
+
+	scrollMore();
+});
+
+$(document).ready(function(){ 
+
+	scrollMore();
 });

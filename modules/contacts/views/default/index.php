@@ -13,7 +13,7 @@ ContactsAsset::register($this);  // $this - представляет собой 
         <div class="row">
             <div class="col">
                 <table id="filter-table">
-                <tr class='table-filters'>  
+                    <tr class='table-filters '>  
                         <td><input class="target" type="text"></td>    
                         <td><input class="target" type="text"></td>    
                         <td><input class="target" type="text"></td>
@@ -22,7 +22,7 @@ ContactsAsset::register($this);  // $this - представляет собой 
                     </tr>
                 <?php foreach ( $contacts as $item ): ?>
 
-                    <tr class='table-data' >  
+                    <tr class='table-data'  >  
                         <td class='id'  onclick="alert('!')"><?php echo $item->id; ?></td>    
                         <td class='first_name'><?php echo $item->first_name; ?></td>    
                         <td class='last_name'><?php echo $item->last_name; ?></td>
@@ -33,6 +33,11 @@ ContactsAsset::register($this);  // $this - представляет собой 
                 <?php endforeach; ?>
                 </table>
             </div>
+
+            <div id="showmore-triger" data-page=0 data-max="<?php echo $max ?>">
+                <img src="ajax-loader.gif" alt="">
+            </div>
+            
             <div class="col">
                 <?php $form = ActiveForm::begin([
                     'id' => 'write-form',
@@ -42,7 +47,7 @@ ContactsAsset::register($this);  // $this - представляет собой 
                                  ],
                 ]) ?>
                    
-                    <?= $form->field($model, 'imageFile', ['options' => ['class' => '']])->fileInput(['options' => ['class' => 'btn btn-primary']])->label('Файл cvf') ?>
+                    <?= $form->field($model, 'imageFile', ['options' => ['class' => '']])->fileInput(['options' => ['class' => 'btn btn-primary']])->label('Файл vcf') ?>
                     
 
                     <button class="btn btn-primary " type="submit" >Отправить</button>

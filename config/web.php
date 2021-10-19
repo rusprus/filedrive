@@ -19,6 +19,10 @@ $config = [
         ],
     ],
     'components' => [
+        'assetManager' => [
+            'class' => 'yii\web\AssetManager',
+            'forceCopy' => true,          
+        ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'MSI5ZKAtztEH5y3upuUt0SFzGGJsK8st',
@@ -68,6 +72,7 @@ $config = [
         
     ],
     'params' => $params,
+    
 ];
 
 if (YII_ENV_DEV) {

@@ -7,12 +7,13 @@ use yii\web\Controller;
 use app\modules\contacts\models\PhoneBook;
 use app\modules\contacts\models\UploadForm;
 use yii\web\UploadedFile;
+use yii\data\Pagination;
 
 
 class DefaultController extends Controller
 {
     /**
-     * 
+     * Вывод главнуой страницы модуля
      *
      * @return 
      */
@@ -20,13 +21,16 @@ class DefaultController extends Controller
     {
         $model = new UploadForm();
 
-        $contacts = PhoneBook::find()->limit(50)->all();
+        $contacts = PhoneBook::find()->limit(10)->all();
 
-        return $this->render( 'index', ['contacts' => $contacts, 'model' => $model ] );
+        $max = PhoneBook::find()->count();
+        $max = ceil($max / 10);
+
+        return $this->render( 'index', ['contacts' => $contacts, 'model' => $model, 'max' => $max ] );
     }
 
     /**
-     * 
+     * Действие обновления поля контакта
      *
      * @return 
      */
@@ -51,7 +55,7 @@ class DefaultController extends Controller
 
     
    /**
-    * 
+    * Действие загрузки файла .vcf
     */
     public function actionUpload()
     {
@@ -63,18 +67,56 @@ class DefaultController extends Controller
             $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
 
             if ($model->upload()) {
-                // file is uploaded successfully
 
                 return $this->redirect( 'index' );
             }
         }
 
-
         return $this->redirect( 'index' );
-
     }
 
-   
+
+    /**
+    * Действие возврата дополнительного контена при прокруке страницы вниз
+    */
+    public function actionGetContacts()
+    {
+        $page = Yii::$app->request->get('page');
+        $query = PhoneBook::find();
+        $countQuery = clone $query;
+        $pages = new Pagination(['totalCount' => $countQuery->count(),
+                                'pageSize' => 10,
+                                'page' => $page ]);
+
+        $contacts = $query->offset($pages->offset)
+            ->limit($pages->limit)
+            ->all();
+
+            $result = '';
+
+            ob_start();
+
+            foreach ($contacts as $item) {
+                ?>
+                <tr class='table-data' data-page=<?= $pages->page ?>>  
+                        <td class='id'  onclick="alert('!')"><?php echo $item->id; ?></td>    
+                        <td class='first_name'><?php echo $item->first_name; ?></td>    
+                        <td class='last_name'><?php echo $item->last_name; ?></td>
+                        <td class='add_names'><?php echo $item->add_names; ?></td>
+                        <td class='tel'><?php echo $item->tel; ?></td>
+                    </tr>
+
+                <?php
+            }
+
+            $result = ob_get_contents();
+            ob_end_clean();
+
+            return $result;
+    }
+
+
+    
 
 
 }
