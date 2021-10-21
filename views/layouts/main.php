@@ -39,6 +39,7 @@ AppAsset::register($this);
         'items' => [
             !Yii::$app->user->isGuest ?  ['label' => 'Хранилище', 'url' => ['/site/fileman']] : "",
             !Yii::$app->user->isGuest ? ['label' => 'Контакты', 'url' => ['/contacts/']] : "",
+            !Yii::$app->user->isGuest ? ['label' => 'Заметки', 'url' => ['/notepad/']] : "",
             Yii::$app->user->isGuest ?  ['label' => 'Регистрация', 'url' => ['/site/signup']]:"",
             // ['label' => 'Контакты', 'url' => ['/site/about']],
 

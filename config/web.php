@@ -17,12 +17,16 @@ $config = [
             'class' => 'app\modules\contacts\Module',
             // ... другие настройки модуля ...
         ],
+        'notepad' => [
+            'class' => 'app\modules\notepad\Notepad',
+            // ... другие настройки модуля ...
+        ],
     ],
     'components' => [
-        // 'assetManager' => [
-        //     'class' => 'yii\web\AssetManager',
-        //     'forceCopy' => true,          
-        // ],
+        'assetManager' => [
+            'class' => 'yii\web\AssetManager',
+            'forceCopy' => true,          
+        ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'MSI5ZKAtztEH5y3upuUt0SFzGGJsK8st',
@@ -64,7 +68,8 @@ $config = [
                 // 'dir/<filename>' => 'site/change-dir',
                 'fileman' => 'fileman/fileman', 
                 'contacts' => 'contacts/default', 
-                'contacts/default' => 'contacts/default', 
+                // 'contacts' => 'contacts/default', 
+                'notepad' => 'notepad/notepad/index', 
                 // '""' => 'site/index',
                 '<action>' => 'site/<action>',
             ],
