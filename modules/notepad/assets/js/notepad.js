@@ -18,6 +18,8 @@ class Desk
         this.notes = [];
         this.levelsZ = [];
         this.coord = getCoords( this.field );
+        this.dbNotes = [];
+        
     }
 
     bindToElem( elem ){
@@ -25,24 +27,9 @@ class Desk
         scene = document.getElementById( elem );
         scene.append( this.field );
         this.coord = getCoords( desk.field );
-        // console.log( this.coord );
     }
 
-    addNote( note ){
-
-        note.coord.left = this.coord.left + 70 * note.id;
-        note.coord.top = this.coord.top + 70 * note.id;
-
-        note.field.style.left = note.coord.left + 'px';
-        note.field.style.top = note.coord.top + 'px';
-
-        // console.log( note.field.style.left );
-        // console.log( note.coord.left );
-
-        this.notes.push( note );
-        this.field.append( note.field );
-
-    }
+    
 
     removeNote( note ){
 
@@ -55,12 +42,53 @@ class Desk
         note = null;
     }
 
-    getNotesFromDb(){
+    async getNotesFromDb(){
+        // Делаем запрос в БД на выдачу существующих заметок
+
+        // var token = $('meta[name="csrf-token"]').attr("content");
+        // let formData = new FormData();
+        // formData.append('val', '1'); 
+        // formData.append('_csrf', 'token'); 
+        // console.log( formData );
+        // console.log( url );
+
+        let url = document.location.origin + '/notepad/notepad/get-notes';
         
+        let response = await fetch(url, {
+            method: 'POST',
+            type: 'JSON',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' 
+            },
+
+          })
+
+        if (response.ok) { 
+            
+            this.dbNotes =  await response.json();
+
+            for( let i=0 ; i< this.dbNotes.length ; i++  ){
+
+                let note = new Note( this.dbNotes[i].id, this.dbNotes[i].text, this.dbNotes[i].level, this.dbNotes[i].top, this.dbNotes[i].left)
+            
+                let addNote = this.addNote.bind(this);
+
+                addNote( note ); 
+            }
+
+          } else {
+            alert("Ошибка HTTP: " + response.status);
+          }
+
     }
 
-    changeFocus( note ){
+     addNote( note ){
 
+        note.field.style.left = note.left + 'px';
+        note.field.style.top = note.top + 'px';
+
+        this.notes.push( note );
+        this.field.append( note.field );
     }
 }
 
@@ -71,15 +99,17 @@ class Desk
 class Note 
 {
 
-    constructor( id, text, level ){
+    constructor( id, text, level, top, left ){
 
         this.id = id;
         this.text = text;
         this.level = level;
+        this.top = top;
+        this.left = left;
         this.field = document.createElement('div');
         this.field.text = 'Пустая заметка';
         this.field.classList.add('note');
-        this.coord = getCoords( this.field );
+        // this.coord = getCoords( this.field );
         this.registerEvents();
 
     }
@@ -148,23 +178,12 @@ class Note
 desk = new Desk();
 desk.bindToElem('scene');
 
-
-//  Создаем заметки
-note1 = new Note( 1, 'Note1', 1) ;
-note2 = new Note( 2, 'Note2', 1) ;
-note3 = new Note( 3, 'Note3', 1) ;
-
-// Добавляем заметки на доску
-desk.addNote( note1 );
-desk.addNote( note2 );
-desk.addNote( note3 );
-
-// desk.removeNote( note1 );
+desk.getNotesFromDb();
 
 
 
 
-  
+
 
 
 
@@ -174,11 +193,12 @@ desk.addNote( note3 );
 
 // Общии функции
 // получаем координаты элемента в контексте документа
-function getCoords(elem) {
+  function  getCoords(elem) {
     let box = elem.getBoundingClientRect();
-  
+
     return {
-      top: box.top + window.pageYOffset,
-      left: box.left + window.pageXOffset
-    };
-  }
+    top: box.top + window.pageYOffset,
+    left: box.left + window.pageXOffset
+    }
+}
+  
