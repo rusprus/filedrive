@@ -4,6 +4,7 @@ namespace app\modules\notepad\models;
 use Yii;
 use yii\web\Response;
 use yii\db\ActiveRecord;
+use yii\behaviors\AttributeTypecastBehavior;
 
 class Note extends ActiveRecord
 {
@@ -20,21 +21,43 @@ class Note extends ActiveRecord
         return '{{notes}}';
     }
 
-
-
     /**
-     * Получить все заметки
+     * Получить все заметки  виде массива
      *
      * @return
      */
     public function getAllNotes(){
 
         // $userId = Yii::$app->user->identity->id;
-        // $files = File::find()->where(['parent' => $parentId, 'user_id' => $userId])->All();
-        $notes = Note::find()->asArray()->all();
+        $userId = 1;
+        $notes = Note::find()->where(['user_id' => $userId])->asArray()->all();   
+        // $notes = Note::find()->asArray()->all();
 
+        // Кастыль для конвертации формата string в int. Т.к. Yii читает данные с БД int unsigne как string
+        for( $i = 0 ; $i < count($notes); $i++ ){
+
+                $notes[$i]['id'] =  (int)$notes[$i]['id'];
+                $notes[$i]['level'] = (int)$notes[$i]['level'];
+                $notes[$i]['top'] = (int) $notes[$i]['top'];
+                $notes[$i]['left'] = (int) $notes[$i]['left']; 
+                $notes[$i]['user_id'] = (int) $notes[$i]['user_id']; 
+        }
 
         return $notes;
+    }
+
+    /**
+     * Получить заметку по id
+     *
+     * @return
+     */
+    public function getNoteById( $id){
+
+        // $userId = Yii::$app->user->identity->id;
+        $userId = 1;
+        $note = Note::find()->where(['id' => $id, 'user_id' => $userId])->one();   
+        
+        return $note;
     }
 
     /**

@@ -5,6 +5,8 @@ use Yii;
 
 use yii\web\Controller;
 use app\modules\notepad\models\Note;
+use yii\web\Response;
+use yii\web\Request;
 
 
 class NotepadController extends Controller
@@ -16,7 +18,7 @@ class NotepadController extends Controller
     return parent::beforeAction($action); 
 }
     /**
-     * Вывод главнуой страницы модуля
+     * Вывод главной страницы модуля
      *
      * @return 
      */
@@ -27,18 +29,48 @@ class NotepadController extends Controller
     }
 
     /**
-     * Вывод главнуой страницы модуля
+     * Обработка запроса на получение всех заметок пользователя
      *
      * @return 
      */
     public function actionGetNotes()
     {
-        // return var_dump('dddddd');
+
+
         $notes = Note::getAllNotes();
 
         return json_encode( $notes ) ;
 
     }
+
+
+    /**
+     * 
+     *
+     * @return 
+     */
+    public function actionUpdateNote()
+    {
+
+        $newNote = Yii::$app->request->getRawBody();
+        $newNote = json_decode( $newNote );
+
+        $oldNote = Note::getNoteById( $newNote->id );
+
+        $oldNote->text = $newNote->text;
+        $oldNote->level = $newNote->level;
+        $oldNote->top = $newNote->top;
+        $oldNote->left = $newNote->left;
+
+        $oldNote->save();
+
+        // return var_dump( $oldNote );
+        return true;
+
+
+    }
+
+    
 
  
 }

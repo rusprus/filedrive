@@ -19,6 +19,7 @@ class Desk
         this.levelsZ = [];
         this.coord = getCoords( this.field );
         this.dbNotes = [];
+
         
     }
 
@@ -42,54 +43,51 @@ class Desk
         note = null;
     }
 
-    async getNotesFromDb(){
+    getNotesFromDb(){
         // Делаем запрос в БД на выдачу существующих заметок
-
-        // var token = $('meta[name="csrf-token"]').attr("content");
-        // let formData = new FormData();
-        // formData.append('val', '1'); 
-        // formData.append('_csrf', 'token'); 
-        // console.log( formData );
-        // console.log( url );
 
         let url = document.location.origin + '/notepad/notepad/get-notes';
         
-        let response = await fetch(url, {
+        fetch(url, {
             method: 'POST',
             type: 'JSON',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' 
             },
+          }).then( 
+              (response) => {
+                if (response.ok) { 
+                    return response.json() 
+                }else{
+                    return alert("Ошибка HTTP: " + response.status);
+                }
+            }).then(
+                (response) => {
 
-          })
+                this.dbNotes =  response;
+                
+                for( let i=0 ; i < this.dbNotes.length ; i++  ){
 
-        if (response.ok) { 
-            
-            this.dbNotes =  await response.json();
+                    // console.log(this.dbNotes[i] );
 
-            for( let i=0 ; i< this.dbNotes.length ; i++  ){
+    
+                    let note = new Note( this.dbNotes[i].id, this.dbNotes[i].text, this.dbNotes[i].level, this.dbNotes[i].top, this.dbNotes[i].left)
 
-                let note = new Note( this.dbNotes[i].id, this.dbNotes[i].text, this.dbNotes[i].level, this.dbNotes[i].top, this.dbNotes[i].left)
-            
-                let addNote = this.addNote.bind(this);
-
-                addNote( note ); 
-            }
-
-          } else {
-            alert("Ошибка HTTP: " + response.status);
-          }
-
+                    this.addNote( note ); 
+                }
+            })
     }
 
-     addNote( note ){
-
+    addNote( note ){
+        
         note.field.style.left = note.left + 'px';
         note.field.style.top = note.top + 'px';
 
         this.notes.push( note );
         this.field.append( note.field );
     }
+
+
 }
 
 /**
@@ -109,76 +107,93 @@ class Note
         this.field = document.createElement('div');
         this.field.text = 'Пустая заметка';
         this.field.classList.add('note');
-        // this.coord = getCoords( this.field );
         this.registerEvents();
 
     }
 
+    // Регистрация событий заметки
     registerEvents(){
 
-        this.field.addEventListener('mousedown', myEventReg);
+        // Регистрация нажатия
+        this.field.addEventListener('mousedown', this.pushMouse.bind(this));
 
-        function myEventReg(event){
- 
-            // Готовим к перемещению:
-            event.target.style.zIndex = 1000;
-
-            // Перемещаем по экрану
-            document.addEventListener('mousemove', onMouseMove);
-
-            // Фиксируем заметку, удаляем более ненужные обработчики событий
-            event.target.addEventListener('mouseup', onMouseUp);
-
-            // Фиксируем заметку  двойным нажатием , удаляем более ненужные обработчики событий
-            event.target.addEventListener('dblclick', onDblclick);
-
-            // Отменяем собственое действие перетаскивания браузера
-            event.target.addEventListener('dragstart', function() { return false });
-
-
-            function moveAt(pageX, pageY) {
-
-                event.target.style.left = pageX - event.target.offsetWidth / 2 + 'px';
-                event.target.style.top = pageY - event.target.offsetHeight / 2 + 'px';
-            }
-        
-            function onMouseMove(event) {
-
-                moveAt(event.pageX, event.pageY);
-            }
-
-            function onMouseUp(event) {
-
-                document.removeEventListener('mousemove', onMouseMove);
-                event.target.onmouseup = null;
-            }
-        
-            function onDblclick(event) {
-
-                document.removeEventListener('mousemove', onMouseMove);
-                event.target.ondblclick = null;
-            }
-
-        }
+        // Регистрация освобождения
+        this.field.addEventListener('mouseup', this.upMouse.bind(this));
     }
 
-    updateText( newText = '' ){
+    // Отпускаем заметку
+    upMouse(event){
 
-        this.text = newText;
+        // Снимаем отслеживание курсора
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.onmousemove = null;
+
+        // При отпускании обновляем БД
+        this.updateNote(event)
+    }
+    
+    // Нажимаем на заметку
+    pushMouse(event){
+
+        // Готовим к перемещению:
+        event.target.style.zIndex = 1000;
+
+        // При нажатии регистрируем отслеживание курсора
+        document.addEventListener('mousemove', this.onMouseMove);
+
+        // Отменяем собственое действие перетаскивания браузера
+        event.target.addEventListener('dragstart', function() { return false });  
     }
 
-    setCoord( x, y ){
+    // Двигаем мышь
+    onMouseMove(event) {
+        // Изменяем координаты заметки
+        event.target.style.left = event.pageX - event.target.offsetWidth / 2 + 'px';
+        event.target.style.top = event.pageY - event.target.offsetHeight / 2 + 'px';
+    }
 
+    // Отсылаем новые данные по текущей заметке. Координаты, текст.
+   updateNote( event ){
+
+        this.text = 'newText';
+        this.top = parseInt( event.target.style.top, 10 );
+        this.left =  parseInt( event.target.style.left, 10 );
+
+                //  Update-запрос заметки
+               let data = JSON.stringify( this, ['text', 'id', 'level', 'top', 'left'] );
+                let url = document.location.origin + '/notepad/notepad/update-note';
+        
+                fetch(url, {
+                    method: 'POST',
+                    type: 'JSON',
+                    body: data,
+                    headers: {
+                      'Content-Type': 'application/json; charset=UTF-8' 
+                    },
+                  }).then( 
+                      (response) => {
+                        if (response.ok) { 
+
+                            return response.json()
+                        }else{
+                            return alert("Ошибка HTTP: " + response.status);
+                        }
+                    })
     }
 }
 
 
-// Создаем доску и добавляем к элементу с id = 'scene'
 
+// Создаем доску и
 desk = new Desk();
+
+// Добавляем к элементу с id = 'scene'
 desk.bindToElem('scene');
 
+// Берем с ДБ заметки и выводим на доску 
 desk.getNotesFromDb();
+
+// console.log(desk.constructor)
 
 
 
