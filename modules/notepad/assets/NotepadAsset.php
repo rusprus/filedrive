@@ -24,7 +24,13 @@ class NotepadAsset extends AssetBundle
      */
     public $js = [
         'js/notepad.js',
+        'js/components/desk.component.js',
+        'js/components/note.component.js',
 
+    ];
+
+    public $jsOptions = [
+        "type" => "module",
     ];
 
     /**

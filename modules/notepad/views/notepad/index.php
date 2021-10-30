@@ -8,7 +8,7 @@ NotepadAsset::register($this);  // $this - представляет собой �
 ?>
 
 <div class="d-flex justify-content-center"><h1>NotePadd(Заметки)</h1></div>
-<!-- <div class="d-flex justify-content-center"><h2>Страница в разработке</h2></div> -->
+<div class="d-flex justify-content-center"><button id='createNote'>Создать заметку</button></div>
 
 <div id="scene"><div>
 
