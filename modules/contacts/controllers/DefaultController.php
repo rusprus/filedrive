@@ -2,7 +2,6 @@
 namespace app\modules\contacts\controllers;
 
 use Yii;
-
 use yii\web\Controller;
 use app\modules\contacts\models\PhoneBook;
 use app\modules\contacts\models\UploadForm;
@@ -19,11 +18,13 @@ class DefaultController extends Controller
      */
     public function actionIndex()
     {
+        $user_id = Yii::$app->user->identity->id;
+
         $model = new UploadForm();
 
-        $contacts = PhoneBook::find()->limit(10)->all();
+        $contacts = PhoneBook::find()->where(['user_id' => $user_id])->limit(10)->all();
 
-        $max = PhoneBook::find()->count();
+        $max = PhoneBook::find()->where(['user_id' => $user_id])->count();
         $max = ceil($max / 10);
 
         return $this->render( 'index', ['contacts' => $contacts, 'model' => $model, 'max' => $max ] );
@@ -36,6 +37,7 @@ class DefaultController extends Controller
      */
     public function actionUpdate()
     {
+        $user_id = Yii::$app->user->identity->id;
 
        $id = Yii::$app->request->post('id') ? Yii::$app->request->post('id') : null;
        $field = Yii::$app->request->post('field') ? Yii::$app->request->post('field') : null;
@@ -43,7 +45,7 @@ class DefaultController extends Controller
 
         if( $id && $field && $value ){
 
-            $contact = PhoneBook::findOne( $id );
+            $contact = PhoneBook::find()->where(['user_id' => $user_id, 'id' => $id])->one();
             $contact->$field = $value;
             if( $contact->save() ){
 
@@ -81,8 +83,11 @@ class DefaultController extends Controller
     */
     public function actionGetContacts()
     {
-        $page = Yii::$app->request->get('page');
-        $query = PhoneBook::find();
+
+        $user_id = Yii::$app->user->identity->id;
+
+        $page = (int)Yii::$app->request->get('page');
+        $query = PhoneBook::find()->where(['user_id' => $user_id]);
         $countQuery = clone $query;
         $pages = new Pagination(['totalCount' => $countQuery->count(),
                                 'pageSize' => 10,

@@ -5,7 +5,7 @@
 export class Note 
 {
 
-    constructor( id = null, text = 'Заметка', level = 1, top = 200, left = 300 ){
+    constructor( id = null, text = 'Заметка', level = 1, top = 200, left = 700 ){
 
         this.id = id;
         this.text = text;
@@ -28,7 +28,9 @@ export class Note
         this.field.addEventListener('mousedown', this.pushMouse.bind(this));
 
         // Регистрация освобождения
-        this.field.addEventListener('mouseup', this.upMouse.bind(this));
+        // this.field.addEventListener('mouseup', this.upMouse.bind(this));
+        
+        document.addEventListener('mouseup', this.upMouse.bind(this));
 
         // Регистрация события dblclick ( редактирования заявки )
         this.field.addEventListener('dblclick', this.editNote.bind(this));
@@ -39,7 +41,6 @@ export class Note
 
         event.stopPropagation();
         event.preventDefault();
-
 
         // Создаем поле ввода текста заметки
         this.inputArea = document.createElement('textarea');
@@ -56,19 +57,15 @@ export class Note
         // Добавляем кнопку удалить 
         this.noteButtonDelete = document.createElement('button');
         this.noteButtonDelete.innerText = "Удалить";
-         
 
          //Вешаем событие на кнопку сохранить
          this.noteButton.addEventListener('click', this.submBtn.bind(this));
 
         //Вешаем событие на кнопку удалить
         this.noteButtonDelete.addEventListener('click', this.deleteNote.bind(this));
-
         
         this.field.append(this.noteButton);
         this.field.append(this.noteButtonDelete);
-
-        console.log('editNote')
     }
 
     submBtn(event){
@@ -86,13 +83,14 @@ export class Note
 
     // Отпускаем заметку
     upMouse(event){
-        // console.log( event )
         if(event.target.tagName ==  "BUTTON") return ;
-        console.log('upMouse');
     
         // Снимаем отслеживание курсора
         document.removeEventListener('mousemove', this.onMouseMove);
         document.onmousemove = null;
+
+        console.log( 'upMouse' )
+
 
         this.top = parseInt( this.field.style.top, 10 );
         this.left =  parseInt( this.field.style.left, 10 );
@@ -103,22 +101,29 @@ export class Note
     
     // Нажимаем на заметку
     pushMouse(event){
-
+        if(event.target.tagName ==  "BUTTON") return ;
         // Готовим к перемещению:
-        event.target.style.zIndex = 1000;
+        // event.target.style.zIndex = 1000;
+        this.field.style.zIndex = 1000
 
         // При нажатии регистрируем отслеживание курсора
+        this.onMouseMove = this.onMouseMove.bind(this);
         document.addEventListener('mousemove', this.onMouseMove);
 
         // Отменяем собственое действие перетаскивания браузера
-        event.target.addEventListener('dragstart', function() { return false });  
+        // event.target.addEventListener('dragstart', function() { return false });  
+        document.addEventListener('dragstart', function() { return false });  
     }
 
     // Двигаем мышь
     onMouseMove(event) {
         // Изменяем координаты заметки
-        event.target.style.left = event.pageX - event.target.offsetWidth / 2 + 'px';
-        event.target.style.top = event.pageY - event.target.offsetHeight / 2 + 'px';
+        // event.target.style.left = event.pageX - event.target.offsetWidth / 2 + 'px';
+        // event.target.style.top = event.pageY - event.target.offsetHeight / 2 + 'px';
+        console.log(this.field)
+        console.log(event)
+        this.field.style.left = event.pageX - this.field.offsetWidth / 2 + 'px';
+        this.field.style.top = event.pageY - this.field.offsetHeight / 2 + 'px';
     }
 
 
@@ -148,15 +153,14 @@ export class Note
                         }
                     })
                     .then((response)=>{
-                        
                         this.id = response.id 
+
+
                     })
     }
 
     // Отсылаем новые данные по текущей заметке. Координаты, текст.
    updateNote(){
-
-    console.log('updateNote');
 
                 //  Update-запрос заметки
                let data = JSON.stringify( this, ['text', 'id', 'level', 'top', 'left'] );

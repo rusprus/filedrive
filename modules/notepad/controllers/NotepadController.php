@@ -49,7 +49,7 @@ class NotepadController extends Controller
     /**
      * actionUpdateNote()
      * 
-     * Получает JSON. Обновляет запись по ID
+     * Получает JSON. Обновляет запись
      *
      * @return 
      */
@@ -59,14 +59,7 @@ class NotepadController extends Controller
         $newNote = Yii::$app->request->getRawBody();
         $newNote = json_decode( $newNote );
 
-        $oldNote = Note::getNoteById( $newNote->id );
-
-        $oldNote->text = $newNote->text;
-        $oldNote->level = $newNote->level;
-        $oldNote->top = $newNote->top;
-        $oldNote->left = $newNote->left;
-
-        $oldNote->save();
+        Note::updateNote( $newNote );
 
         return true;
     }
@@ -81,18 +74,16 @@ class NotepadController extends Controller
     public function actionDeleteNote()
     {
 
-        $newNote = Yii::$app->request->getRawBody();
-        $newNote = json_decode( $newNote );
+        $note = Yii::$app->request->getRawBody();
+        $note = json_decode( $note );
 
-        $oldNote = Note::getNoteById( $newNote->id );
-
-        $oldNote->delete();
+        Note::deleteNote( $note->id );
 
         return true;
     }
 
 
-      /**
+    /**
      * actionInsertNote()
      * 
      * Добавляем новую заметку в БД по нажатию на кнопку 
@@ -102,18 +93,11 @@ class NotepadController extends Controller
      */
     public function actionInsertNote()
     {
-        // $newNote->id = Yii::$app->user->id;
+        
         $newNote = Yii::$app->request->getRawBody();
         $newNote = json_decode( $newNote );
 
-        $newNoteToDb = new Note();
-        $newNoteToDb->user_id = 1;
-        $newNoteToDb->text = $newNote->text;
-        $newNoteToDb->level = $newNote->level;
-        $newNoteToDb->top = $newNote->top;
-        $newNoteToDb->left = $newNote->left; 
-
-        $newNoteToDb->save();
+        $newNoteToDb = Note::insertNote( $newNote );
 
         return json_encode(  ArrayHelper::toArray($newNoteToDb ) );
     }

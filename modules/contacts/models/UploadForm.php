@@ -5,6 +5,7 @@ use yii\base\Model;
 use yii\web\UploadedFile;
 use app\modules\contacts\models\PhoneBook;
 use app\modules\contacts\models\VCard;
+use Yii;
 
 
 
@@ -42,6 +43,7 @@ class UploadForm extends Model
 
             $this->imageFile->saveAs(__DIR__ .'/../uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
             $this->writeToDb();
+            unlink(__DIR__ .'/../uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
             
             return true;
         } else {
@@ -55,6 +57,7 @@ class UploadForm extends Model
     */
     public function writeToDb()
     {
+        $user_id = Yii::$app->user->identity->id;
 
         $name = $this->imageFile->name;
         $path_parts = pathinfo($name);
@@ -72,6 +75,8 @@ class UploadForm extends Model
                     $contact->last_name = $vCardPart->n[0]['LastName'];
                     $contact->add_names = $vCardPart->n[0]['AdditionalNames'];
                     $contact->tel = isset($vCardPart->tel[0]['Value']) ? $vCardPart->tel[0]['Value'] : null;
+                    $contact->user_id = $user_id;
+                    
                     $contact->save();
 
                 }

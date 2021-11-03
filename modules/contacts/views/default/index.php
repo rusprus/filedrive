@@ -11,6 +11,26 @@ ContactsAsset::register($this);  // $this - представляет собой 
 <h1 class='text-center'>Телефонная книга</h1>
 
         <div class="row">
+            <div class="col">С телефона можно экспортировать файл формата .vcf с контактами для загрузки</div>
+            <div class="col">
+                <?php $form = ActiveForm::begin([
+                    'id' => 'write-form',
+                    'action' => '/contacts/default/upload',
+                    'options' => ['enctype' => 'multipart/form-data',
+                                    'class' => 'row',
+                                 ],
+                ]) ?>
+                   
+                    <?= $form->field($model, 'imageFile', ['options' => ['class' => '']])->fileInput(['options' => ['class' => 'btn btn-primary']])->label('Файл vcf') ?>
+                    
+
+                    <button class="btn btn-primary " type="submit" >Загрузить</button>
+                <?php ActiveForm::end() ?>
+
+            </div>
+        </div>
+
+        <div class="row">
             <div class="col">
                 <table id="filter-table">
                     <tr class='table-filters '>  
@@ -38,20 +58,5 @@ ContactsAsset::register($this);  // $this - представляет собой 
                 <img src="ajax-loader.gif" alt="">
             </div>
             
-            <div class="col">
-                <?php $form = ActiveForm::begin([
-                    'id' => 'write-form',
-                    'action' => '/contacts/default/upload',
-                    'options' => ['enctype' => 'multipart/form-data',
-                                    'class' => ' row',
-                                 ],
-                ]) ?>
-                   
-                    <?= $form->field($model, 'imageFile', ['options' => ['class' => '']])->fileInput(['options' => ['class' => 'btn btn-primary']])->label('Файл vcf') ?>
-                    
-
-                    <button class="btn btn-primary " type="submit" >Отправить</button>
-                <?php ActiveForm::end() ?>
-
-            </div>
+        
         </div>

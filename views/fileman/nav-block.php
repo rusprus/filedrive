@@ -15,7 +15,7 @@ use yii\widgets\ActiveForm;
             Создать папку</a>
         </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Корзина</a>
+            <!-- <a class="nav-link" href="#">Корзина</a> -->
           </li>
       </ul>
 </div>

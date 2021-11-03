@@ -16,8 +16,6 @@ desk.getNotesFromDb();
 
 //Создаем кнопку добавить и вешаем событие колика 
 let createButton = document.getElementById('createNote');
-console.log( createButton );
-
 
 createButton.onclick = function(){
 

@@ -18,6 +18,7 @@ class create_phone_book_table extends Migration
             'last_name' => $this->char(255),
             'add_names' => $this->char(255),
             'tel' => $this->char(255),
+            'user_id' => $this->integer(10),
         ]);
 
         $this->insert('phone_book', [
